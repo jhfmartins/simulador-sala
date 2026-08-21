@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador de implantação — sala de máquinas</title>
+<style>
+  :root{
+    --bg:#f4f4f2; --panel:#ffffff; --ink:#15181c; --ink2:#4a5158; --line:#c9cdd2;
+    --line2:#e2e5e8; --accent:#1d4e79; --ok:#1c6b3a; --bad:#a01b1b; --warn:#8a5a00;
+    --sel:#0b57a4;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font:13px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    color:var(--ink); background:var(--bg); display:flex; flex-direction:column;
+  }
+  h1{font-size:14px;margin:0;font-weight:650;letter-spacing:.2px}
+  h2{font-size:12px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink2)}
+  h2:first-child{margin-top:0}
+  header{
+    display:flex;align-items:center;gap:14px;padding:8px 12px;background:var(--panel);
+    border-bottom:1px solid var(--line);flex-wrap:wrap
+  }
+  #metrics{display:flex;gap:14px;flex-wrap:wrap;margin-left:auto}
+  .met{display:flex;flex-direction:column;line-height:1.15}
+  .met b{font-size:15px;font-variant-numeric:tabular-nums}
+  .met span{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink2)}
+  main{flex:1;display:flex;min-height:0}
+  #planPane{flex:1;display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--line)}
+  #planBar{display:flex;gap:8px;align-items:center;padding:6px 10px;background:var(--panel);
+    border-bottom:1px solid var(--line);flex-wrap:wrap}
+  #planScroll{flex:1;overflow:auto;background:#e9e9e6;padding:14px;display:flex;justify-content:center}
+  #plan{background:#fff;box-shadow:0 0 0 1px var(--line);height:max-content}
+  aside{width:432px;min-width:432px;display:flex;flex-direction:column;background:var(--panel)}
+  #tabs{display:flex;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+  #tabs button{flex:1 0 auto;padding:7px 9px;border:0;border-right:1px solid var(--line2);
+    background:#eff0f1;cursor:pointer;font:inherit;font-size:12px}
+  #tabs button.on{background:var(--panel);font-weight:650;box-shadow:inset 0 -2px 0 var(--accent)}
+  #panels{flex:1;overflow:auto;padding:10px 12px 40px}
+  .panel{display:none}.panel.on{display:block}
+  button,select,input[type=text],input[type=number],textarea{
+    font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:3px;padding:3px 6px}
+  button{background:#f0f1f2;cursor:pointer}
+  button:hover{background:#e4e6e8}
+  button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.pri:hover{background:#17405f}
+  button.sm{padding:1px 5px;font-size:11px}
+  label.row{display:flex;align-items:center;gap:7px;margin:5px 0}
+  label.row>span:first-child{flex:0 0 128px;color:var(--ink2)}
+  input[type=range]{flex:1;min-width:60px}
+  .val{flex:0 0 54px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  table{border-collapse:collapse;width:100%;font-size:12px}
+  th,td{border-bottom:1px solid var(--line2);padding:3px 4px;text-align:left;vertical-align:middle}
+  th{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink2);font-weight:600}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+  tr.sel{background:#e6f0fa}
+  input.mini{width:46px;padding:2px 3px;text-align:right;font-variant-numeric:tabular-nums}
+  input.bad{border-color:var(--bad);background:#fdf0f0}
+  .chip{display:inline-block;padding:1px 6px;border-radius:9px;font-size:11px;border:1px solid var(--line)}
+  .chip.ok{background:#e8f3ec;border-color:#a9cfb7;color:var(--ok)}
+  .chip.bad{background:#fbeaea;border-color:#dfaeae;color:var(--bad)}
+  .chip.warn{background:#fbf3e0;border-color:#ddc794;color:var(--warn)}
+  ul.rules{list-style:none;margin:0;padding:0}
+  ul.rules li{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line2)}
+  ul.rules .dot{flex:0 0 9px;height:9px;border-radius:50%;margin-top:5px;background:var(--ok)}
+  ul.rules .dot.bad{background:var(--bad)}
+  ul.rules .dot.warn{background:var(--warn)}
+  ul.rules b{display:block;font-weight:600}
+  ul.rules small{color:var(--ink2)}
+  .hint{color:var(--ink2);font-size:11.5px;margin:4px 0 8px}
+  .sw{display:inline-block;width:11px;height:11px;border:1px solid #6b7076;vertical-align:-1px;margin-right:5px}
+  #legend{display:flex;flex-wrap:wrap;gap:3px 14px;font-size:11px;margin-top:8px}
+  #legend div{white-space:nowrap}
+  textarea{width:100%;min-height:110px;resize:vertical}
+  .bar{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+  .invItem{cursor:grab}
+  .invItem:active{cursor:grabbing}
+  #selBox{border:1px solid var(--line);background:#f7f8f9;padding:7px;border-radius:3px;margin-bottom:8px}
+  #printOnly{flex:none;padding:5px 10px;border-top:1px solid var(--line);background:var(--panel)}
+  #printOnly #legend{margin:0}
+  #printHead,#printNotes{display:none}
+  /* ---------- impressão A4 1:75 ---------- */
+  @media print{
+    @page{size:A4 portrait;margin:8mm}
+    body{background:#fff;display:block}
+    header,aside,#planBar{display:none!important}
+    main{display:block}
+    #planPane{border:0}
+    #planScroll{overflow:visible;background:#fff;padding:0;display:block}
+    #plan{box-shadow:none;width:var(--pw)!important;height:var(--ph)!important}
+    #printOnly{margin-top:4mm;padding:0;border:0;font-size:8pt;page-break-inside:avoid}
+    #printHead,#printNotes{display:block}
+    #printOnly #legend{font-size:7.5pt}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Simulador de implantação — sala 7,35 × 13,90 m</h1>
+  <span id="modeChip" class="chip">bandas</span>
+  <div id="metrics"></div>
+</header>
+
+<main>
+  <section id="planPane">
+    <div id="planBar">
+      <span style="color:var(--ink2)">Coloração:</span>
+      <select id="colorMode">
+        <option value="model">por modelo</option>
+        <option value="board">por placa</option>
+        <option value="park">novo vs. existente</option>
+      </select>
+      <span style="width:10px"></span>
+      <button class="sm" id="zOut">−</button>
+      <button class="sm" id="zFit">ajustar</button>
+      <button class="sm" id="zIn">+</button>
+      <span style="width:10px"></span>
+      <label class="row" style="margin:0"><input type="checkbox" id="showGrid"> <span style="flex:none">grelha 1 m</span></label>
+      <label class="row" style="margin:0"><input type="checkbox" id="showDims" checked> <span style="flex:none">cotas</span></label>
+      <label class="row" style="margin:0"><input type="checkbox" id="showLabels" checked> <span style="flex:none">etiquetas</span></label>
+      <span style="margin-left:auto"></span>
+      <button class="sm" id="expSvg">SVG</button>
+      <button class="sm" id="expPng">PNG</button>
+      <button class="sm" id="expJson">JSON ↓</button>
+      <button class="sm" id="impJson">JSON ↑</button>
+      <button class="sm" id="doPrint">Imprimir 1:75</button>
+    </div>
+    <div id="planScroll"><svg id="plan" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  </section>
+
+  <aside>
+    <div id="tabs">
+      <button data-t="valid" class="on">Validação</button>
+      <button data-t="rows">Filas</button>
+      <button data-t="params">Parâmetros</button>
+      <button data-t="inv">Inventário</button>
+      <button data-t="obst">Obstáculos</button>
+      <button data-t="scen">Cenários</button>
+      <button data-t="notes">Notas</button>
+    </div>
+    <div id="panels">
+
+      <div class="panel on" data-p="valid">
+        <h2>Regras</h2>
+        <ul class="rules" id="rules"></ul>
+        <h2>Cadeia de bandas em Y</h2>
+        <table id="bands"></table>
+        <h2>Folgas em X</h2>
+        <table id="xchain"></table>
+      </div>
+
+      <div class="panel" data-p="rows">
+        <div id="selBox"></div>
+        <div class="bar">
+          <button class="sm" id="addRow">+ fila</button>
+          <button class="sm" id="addSolta">+ máquina solta</button>
+          <button class="sm" id="reflowBtn">Redistribuir por bandas</button>
+          <button class="sm" id="autoFill">Preenchimento automático</button>
+          <button class="sm" id="clearAll">Limpar atribuições</button>
+        </div>
+        <p class="hint">Arrasta uma fila no plano para a mover em Y (passo 0,05 m) — passa a disposição manual.
+        Clica numa baia para a selecionar; <b>Destacar</b> transforma-a em máquina solta, que depois se
+        arrasta em X e Y e roda com <b>R</b>. Setas movem 0,10 m (0,05 m com Shift).
+        Arrastar um modelo do inventário para chão livre cria logo uma máquina solta.</p>
+        <p class="hint">Só as unidades <b>com modelo atribuído</b> ocupam espaço: uma baia vazia é um
+        lugar reservado, conta para a grelha e para as cotas, mas não bloqueia a circulação nem colide
+        com nada.</p>
+        <h2>Filas</h2>
+        <div class="bar">
+          <span style="align-self:center;color:var(--ink2)">Preencher a fila selecionada:</span>
+          <select id="fillSel" style="max-width:150px"></select>
+          <button class="sm" id="fillBtn">Aplicar</button>
+        </div>
+        <table id="rowsTbl"></table>
+        <h2>Máquinas soltas</h2>
+        <table id="soltasTbl"></table>
+        <div class="bar"><button class="sm" id="delSoltas">Remover todas as soltas</button>
+          <button class="sm" id="absorver">Alinhar soltas à grelha de 0,05</button></div>
+      </div>
+
+      <div class="panel" data-p="params">
+        <h2>Módulo e corredores</h2>
+        <div id="sliders"></div>
+        <div class="bar">
+          <span style="color:var(--ink2);align-self:center">Presets de corredor:</span>
+          <button class="sm" data-aisle="1.00">1,00 mínimo</button>
+          <button class="sm" data-aisle="1.10">1,10 atual</button>
+          <button class="sm" data-aisle="1.45">1,45 técnico sentado</button>
+        </div>
+        <p class="hint">Com um técnico sentado, a cadeira ocupa 0,75–0,90 m do corredor.</p>
+        <h2>Área de trabalho</h2>
+        <div id="workCtl"></div>
+        <h2>Bancada Smart top</h2>
+        <div id="benchCtl"></div>
+        <h2>Parque existente</h2>
+        <div id="existCtl"></div>
+      </div>
+
+      <div class="panel" data-p="inv">
+        <p class="hint">Arrasta uma linha para uma baia do plano, ou seleciona uma baia e clica no modelo.</p>
+        <table id="invTbl"></table>
+        <h2>Por colocar</h2>
+        <table id="pendTbl"></table>
+      </div>
+
+      <div class="panel" data-p="obst">
+        <h2>Pilares</h2>
+        <div class="bar">
+          <button class="sm" id="addPilarC">+ pilar circular</button>
+          <button class="sm" id="addPilarR">+ pilar rectangular</button>
+        </div>
+        <table id="pilarTbl"></table>
+        <h2>Caixas de pavimento</h2>
+        <div class="bar"><button class="sm" id="addBox">+ caixa</button></div>
+        <table id="boxTbl"></table>
+        <p class="hint">Lista vazia por omissão — posições por confirmar em obra.
+        As baias não podem sobrepor pilares.</p>
+      </div>
+
+      <div class="panel" data-p="scen">
+        <div class="bar">
+          <input type="text" id="scenName" placeholder="nome do cenário" style="flex:1">
+          <button class="sm pri" id="scenSave">Guardar</button>
+        </div>
+        <p class="hint">Até 3 cenários em memória. Para guardar em disco usa <b>JSON ↓</b> — não há
+        dependência de armazenamento do browser.</p>
+        <table id="scenTbl"></table>
+      </div>
+
+      <div class="panel" data-p="notes">
+        <h2>Pendências e notas</h2>
+        <p class="hint">Carga eléctrica, carga térmica e percursos de evacuação ficam fora desta
+        ferramenta: dependem das chapas de características reais e do parecer das equipas de
+        instalações e de segurança. Registe aqui as pendências.</p>
+        <textarea id="notes"></textarea>
+      </div>
+
+    </div>
+  </aside>
+</main>
+
+<div id="printOnly">
+  <div id="printHead"></div>
+  <div id="legend"></div>
+  <div id="printNotes" style="margin-top:3mm;white-space:pre-wrap"></div>
+</div>
+
+<input type="file" id="fileIn" accept=".json,application/json" style="display:none">
+
+<script>
+"use strict";
+/* ============================================================================
+   Simulador de implantação de máquinas de jogo.
+   Unidade interna do desenho = 1 mm à escala 1:75  →  1 m = 13,3333 unidades.
+   Assim o SVG impresso com width/height em mm sai exactamente a 1:75.
+   ========================================================================== */
+
+const M = 40/3;                       // unidades por metro
+const ROOM_W = 7.35, ROOM_H = 13.90;
+const POLY = [[0,0],[7.35,0],[7.35,13.90],[3.20,13.90],[3.20,7.50],[0,7.50]];
+const OFFICE = {x0:0, y0:7.50, x1:3.20, y1:10.50};
+const G = 0.05;                       // grelha de análise
+const GW = Math.round(ROOM_W/G), GH = Math.round(ROOM_H/G);   // 147 × 278
+
+const DOORS = [
+  {id:'ext', nome:'Porta exterior', tipo:'h', x0:0.49, x1:1.65, y:0.00,
+   clear:{x0:0.49,x1:1.65,y0:0.00,y1:1.10}, alvo:[1.07,0.10]},
+  {id:'gab', nome:'Porta do gabinete', tipo:'v', x:3.20, y0:7.50, y1:8.60,
+   clear:{x0:3.20,x1:4.30,y0:7.50,y1:8.60}, alvo:[3.30,8.05]}
+];
+
+/* -------------------------------- inventário ----------------------------- */
+const SKUS = [
+  {m:'Galaxy II',          b:'Heber',           q:6},
+  {m:'Galaxy II',          b:'Quixant 7000',    q:3},
+  {m:'Galaxy II',          b:'Quixant 7000 L',  q:3},
+  {m:'Galaxy II',          b:'Quixant 200',     q:1},
+  {m:'Phantom II',         b:'Heber',           q:3},
+  {m:'Phantom II',         b:'Quixant 200',     q:3},
+  {m:'Phantom II',         b:'Quixant 7000',    q:1},
+  {m:'Shadow III',         b:'Quixant 7000',    q:3},
+  {m:'Shadow III',         b:'Quixant 7000 L',  q:1},
+  {m:'Starship II',        b:'Quixant 200',     q:2},
+  {m:'Starship II',        b:'Axiomtek GMB140', q:2},
+  {m:'Auria J Curve',      b:'Quixant 7000 L',  q:3},
+  {m:'Auria Flat',         b:'Quixant 7000 L',  q:3},
+  {m:'Auria 3 monitores',  b:'Quixant 7000 L',  q:3},
+  {m:'Auria 2 monitores',  b:'Quixant 7000 L',  q:2},
+  {m:'Auria J Inverted',   b:'Quixant 7000 L',  q:2},
+  {m:'PH Xtreme',          b:'Quixant 200',     q:2},
+  {m:'Phantom',            b:'Heber',           q:1},
+  {m:'Phantom',            b:'Quixant 200',     q:1},
+  {m:'Smart top',          b:'Quixant 7000 L',  q:2, bancada:true},
+  {m:'PH Xtreme II',       b:'Axiomtek GMB140', q:1},
+  {m:'SDM',                b:'D1800BITX',       q:1},
+  {m:'Starship Duo',       b:'Quixant 200',     q:1}
+];
+const EXIST = 'Parque existente';
+
+const MODELS = [];                    // ordem de catálogo, sem repetições
+SKUS.forEach(s=>{
+  let e = MODELS.find(x=>x.m===s.m);
+  if(!e){ e={m:s.m, q:0, bancada:!!s.bancada, boards:[]}; MODELS.push(e); }
+  e.q += s.q; if(!e.boards.includes(s.b)) e.boards.push(s.b);
+});
+const FLOOR_MODELS = MODELS.filter(m=>!m.bancada);
+
+const ABREV = {
+  'Galaxy II':'Galaxy II','Phantom II':'Phant. II','Shadow III':'Shad. III',
+  'Starship II':'Starsh. II','Auria J Curve':'Auria J C.','Auria Flat':'Auria Flat',
+  'Auria 3 monitores':'Auria 3 mon.','Auria 2 monitores':'Auria 2 mon.',
+  'Auria J Inverted':'Auria J Inv.','PH Xtreme':'PH Xtr.','Phantom':'Phantom',
+  'Smart top':'Smart top','PH Xtreme II':'PH Xtr. II','SDM':'SDM',
+  'Starship Duo':'Starsh. Duo',[EXIST]:'Existente'
+};
+const BOARD_CODE = {'Heber':'HEB','Quixant 7000':'Q7000','Quixant 7000 L':'Q7000L',
+  'Quixant 200':'Q200','Axiomtek GMB140':'GMB140','D1800BITX':'D1800','—':'—'};
+
+const PAL = ['#8ab4d8','#e8a86b','#93c49a','#d68b8b','#b3a2cf','#c9b072','#7fc4c4',
+             '#d9a0c4','#a8b57c','#9fa8c9','#d4b98c','#86bfa8','#cf9f7f','#a9c6d8','#c4c48a'];
+const MODEL_COLOR = {}; MODELS.forEach((m,i)=>MODEL_COLOR[m.m]=PAL[i%PAL.length]);
+MODEL_COLOR[EXIST] = '#b9b9b9';
+const BOARD_COLOR = {'Heber':'#8ab4d8','Quixant 7000':'#e8a86b','Quixant 7000 L':'#93c49a',
+  'Quixant 200':'#b3a2cf','Axiomtek GMB140':'#d68b8b','D1800BITX':'#c9b072','—':'#b9b9b9'};
+
+/* -------------------------------- estado --------------------------------- */
+const rep = (m,n)=>Array(n).fill(m);
+
+function estadoInicial(){
+  return {
+    p:{ bayW:0.71, bayD:0.80, aisle:1.10, backGap:0.00, startGap:1.00, aisleMin:1.10 },
+    layoutMode:'bands',
+    rows:[
+      {id:'R1', y:1.00,  x0:1.65, n:8, facing:'S', park:'new', a:rep('Galaxy II',8)},
+      {id:'R2', y:1.80,  x0:1.65, n:8, facing:'N', park:'new', a:[...rep('Galaxy II',5),...rep('Phantom II',3)]},
+      {id:'R3', y:3.70,  x0:4.49, n:4, facing:'S', park:'new', a:[...rep('Phantom',2),...rep('Shadow III',2)]},
+      {id:'R4', y:4.50,  x0:4.49, n:4, facing:'N', park:'new', a:[...rep('Shadow III',2),...rep('PH Xtreme',2)]},
+      {id:'R5', y:6.40,  x0:4.49, n:4, facing:'S', park:'new', a:rep('Starship II',4)},
+      {id:'R6', y:7.20,  x0:4.49, n:4, facing:'N', park:'new', a:['Starship Duo','SDM','PH Xtreme II','Auria J Curve']},
+      {id:'R7', y:9.10,  x0:4.49, n:4, facing:'S', park:'new', a:[...rep('Auria J Curve',2),...rep('Auria 2 monitores',2)]},
+      {id:'R8', y:9.90,  x0:4.49, n:4, facing:'N', park:'new', a:[...rep('Auria Flat',3),'Auria 3 monitores']},
+      {id:'R9', y:11.80, x0:4.49, n:4, facing:'S', park:'new', a:[...rep('Auria 3 monitores',2),...rep('Auria J Inverted',2)]}
+    ],
+    soltas:[],
+    work:{on:true,  x0:0.00, y0:4.50, x1:3.20, y1:7.50},
+    bench:{on:true, x0:4.49, y0:13.15, x1:7.33, y1:13.80},
+    pilares:[], caixas:[],
+    exist:{incluir:false, fixas:true, n:20},
+    colorMode:'model',
+    notas:'Pendências: carga eléctrica e térmica por confirmar com Instalações (chapas de '+
+          'características). Percursos de evacuação por validar com Segurança. Posição dos '+
+          'pilares e caixas de pavimento por levantar em obra. Localização das 20 máquinas do '+
+          'parque existente não confirmada.'
+  };
+}
+let S = estadoInicial();
+let sel = null;                        // {rid, k}
+let selRow = null;                     // id de fila
+let cenarios = [];
+let zoom = null;                       // px por unidade de desenho (null = ajustar)
+const view = {grid:false, dims:true, labels:true};
+let R = null;                          // resultado do último cálculo
+
+const r2 = v=>Math.round(v*100)/100;
+const r3 = v=>Math.round(v*1000)/1000;
+const nf = (v,d=2)=>v.toLocaleString('pt-PT',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+/* --------------------------- geometria auxiliar -------------------------- */
+function pointInPoly(x,y,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const [xi,yi]=poly[i], [xj,yj]=poly[j];
+    if(((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) inside=!inside;
+  }
+  return inside;
+}
+const inRect=(x,y,r)=> x>=r.x0 && x<r.x1 && y>=r.y0 && y<r.y1;
+
+function onPilar(x,y){
+  for(const p of S.pilares){
+    if(p.tipo==='c'){ const d=Math.hypot(x-p.x,y-p.y); if(d < p.d/2) return true; }
+    else if(x>=p.x && x<p.x+p.w && y>=p.y && y<p.y+p.h) return true;
+  }
+  return false;
+}
+function bayRect(row,k){
+  const w=S.p.bayW, d=S.p.bayD;
+  return {x0:r3(row.x0+k*w), x1:r3(row.x0+(k+1)*w), y0:row.y, y1:r3(row.y+d)};
+}
+/* Máquinas soltas: envelope com a frente virada para uma das quatro direcções.
+   Em E/W a largura de frente passa para o eixo Y e a profundidade para o X. */
+function footprint(u){
+  const horiz = u.facing==='E' || u.facing==='W';
+  const w = horiz ? S.p.bayD : S.p.bayW;
+  const h = horiz ? S.p.bayW : S.p.bayD;
+  return {x0:r3(u.x), y0:r3(u.y), x1:r3(u.x+w), y1:r3(u.y+h)};
+}
+const facingOf = b => b.tipo==='solta' ? b.u.facing : b.row.facing;
+const parkOf   = b => b.tipo==='solta' ? (b.u.parque||'new') : b.row.park;
+const nomeUnid = b => b.tipo==='solta' ? b.u.id : b.row.id+'/'+(b.k+1);
+const fixa     = b => parkOf(b)==='existing' && S.exist.fixas;
+const isSel = b => sel && (b.tipo==='solta'
+  ? (sel.tipo==='solta' && sel.id===b.u.id)
+  : (sel.tipo==='baia' && sel.rid===b.row.id && sel.k===b.k));
+function novoIdSolta(){
+  let i=1; while(S.soltas.some(u=>u.id==='M'+i)) i++; return 'M'+i;
+}
+function criarSolta(m, px, py, facing){
+  const u={id:novoIdSolta(), m:m||null, x:0, y:0, facing:facing||'S', parque:'new'};
+  const f=footprint(u), w=f.x1-f.x0, h=f.y1-f.y0;
+  const sn=v=>r2(Math.round(v/0.05)*0.05);
+  u.x=Math.max(0,Math.min(r2(ROOM_W-w), sn(px-w/2)));
+  u.y=Math.max(0,Math.min(r2(ROOM_H-h), sn(py-h/2)));
+  S.soltas.push(u);
+  return u;
+}
+const rowLen = r=> r3(r.n*S.p.bayW);
+const rowEnd = r=> r3(r.x0+rowLen(r));
+
+/* Índices das células cujo centro cai em [a,b). Robusto a erro de vírgula
+   flutuante — 9,10/0,05 dá 181,99999… e um floor ingénuo perdia uma célula,
+   o que subestimava as folgas em 0,05 m. */
+function cells(a,b,max){
+  const i0 = Math.max(0, Math.ceil(a/G - 0.5 - 1e-9));
+  const i1 = Math.min(max-1, Math.ceil(b/G - 0.5 - 1e-9) - 1);
+  return [i0,i1];
+}
+
+/* ------------------------------- cálculo -------------------------------- */
+function reflow(){
+  const rows = S.rows.slice().sort((a,b)=>a.y-b.y);
+  let y = S.p.startGap;
+  rows.forEach((r,i)=>{
+    r.y = r3(y);
+    y += S.p.bayD;
+    const nx = rows[i+1];
+    if(nx) y += (r.facing==='S' && nx.facing==='N') ? S.p.backGap : S.p.aisle;
+  });
+  S.rows = rows;
+  S.layoutMode = 'bands';
+}
+
+function compute(){
+  const P=S.p;
+  // normalizar o parque existente antes de qualquer medição
+  S.rows.forEach(r=>{ if(r.park==='existing') for(let k=0;k<r.n;k++) r.a[k]=EXIST; });
+  S.soltas.forEach(u=>{ if(u.parque==='existing') u.m=EXIST; });
+  const inside = new Uint8Array(GW*GH);
+  for(let j=0;j<GH;j++) for(let i=0;i<GW;i++){
+    const x=(i+0.5)*G, y=(j+0.5)*G;
+    inside[j*GW+i] = (pointInPoly(x,y,POLY) && !inRect(x,y,OFFICE) && !onPilar(x,y)) ? 1 : 0;
+  }
+  const free = inside.slice();
+  const blockRect = r=>{
+    const i0=Math.max(0,Math.floor(r.x0/G)), i1=Math.min(GW-1,Math.ceil(r.x1/G));
+    const j0=Math.max(0,Math.floor(r.y0/G)), j1=Math.min(GH-1,Math.ceil(r.y1/G));
+    for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++){
+      const x=(i+0.5)*G, y=(j+0.5)*G;
+      if(x>=r.x0&&x<r.x1&&y>=r.y0&&y<r.y1) free[j*GW+i]=0;
+    }
+  };
+  /* Só as unidades com modelo atribuído ocupam espaço: uma baia vazia é um lugar
+     reservado, não um obstáculo — não bloqueia a circulação nem colide com nada. */
+  const bays=[];
+  S.rows.forEach(row=>{
+    for(let k=0;k<row.n;k++){
+      const rc=bayRect(row,k), m=row.a[k]||null;
+      bays.push({tipo:'baia', row, k, rc, modelo:m, board:null, flags:[]});
+      if(m) blockRect(rc);
+    }
+  });
+  S.soltas.forEach(u=>{
+    const rc=footprint(u);
+    bays.push({tipo:'solta', u, rc, modelo:u.m||null, board:null, flags:[]});
+    if(u.m) blockRect(rc);
+  });
+  if(S.work.on)  blockRect(S.work);
+  if(S.bench.on) blockRect(S.bench);
+
+  /* --- inundação a partir da porta exterior --- */
+  const reach = new Uint8Array(GW*GH);
+  const startI = Math.floor(DOORS[0].alvo[0]/G), startJ = Math.floor(DOORS[0].alvo[1]/G);
+  let portaLivre = free[startJ*GW+startI]===1;
+  if(portaLivre){
+    const st=[startJ*GW+startI]; reach[st[0]]=1;
+    while(st.length){
+      const c=st.pop(), i=c%GW, j=(c-i)/GW;
+      const viz=[[i-1,j],[i+1,j],[i,j-1],[i,j+1]];
+      for(const [a,b] of viz){
+        if(a<0||b<0||a>=GW||b>=GH) continue;
+        const n=b*GW+a;
+        if(free[n]===1 && !reach[n]){ reach[n]=1; st.push(n); }
+      }
+    }
+  }
+  let freeN=0, reachN=0, insideN=0, maxYreach=0;
+  for(let j=0;j<GH;j++) for(let i=0;i<GW;i++){
+    const c=j*GW+i;
+    if(inside[c]) insideN++;
+    if(free[c]){ freeN++; if(reach[c]){ reachN++; maxYreach=Math.max(maxYreach,(j+0.5)*G);} }
+  }
+
+  /* --- folga em frente de cada baia --- */
+  const clearAt = (rc, facing)=>{
+    const [i0,i1] = cells(rc.x0, rc.x1, GW);
+    const [j0,j1] = cells(rc.y0, rc.y1, GH);
+    const horiz = facing==='E' || facing==='W';
+    const step  = (facing==='S' || facing==='W') ? -1 : 1;
+    const ini   = facing==='S' ? j0-1 : facing==='N' ? j1+1 : facing==='W' ? i0-1 : i1+1;
+    const a0 = horiz ? j0 : i0, a1 = horiz ? j1 : i1, lim = horiz ? GW : GH;
+    let d=0, alcancavel=false;
+    for(let t=0;t<Math.round(3/G);t++){
+      const p=ini+step*t;
+      if(p<0||p>=lim) break;
+      let ok=true;
+      for(let a=a0;a<=a1;a++){
+        const c = horiz ? a*GW+p : p*GW+a;
+        if(!free[c]){ ok=false; break; }
+        if(reach[c]) alcancavel=true;
+      }
+      if(!ok) break;
+      d=(t+1)*G;
+    }
+    return {d:r2(d), alcancavel};
+  };
+
+  /* --- bandeiras por baia --- */
+  bays.forEach(b=>{
+    // dentro do polígono / fora do gabinete / fora de pilares
+    const [i0,i1]=cells(b.rc.x0,b.rc.x1,GW), [j0,j1]=cells(b.rc.y0,b.rc.y1,GH);
+    let dentro = b.rc.x0>=-1e-9 && b.rc.x1<=ROOM_W+1e-9 && b.rc.y0>=-1e-9 && b.rc.y1<=ROOM_H+1e-9;
+    for(let j=j0;j<=j1&&dentro;j++) for(let i=i0;i<=i1;i++){
+      if(!inside[j*GW+i]){ dentro=false; break; }
+    }
+    if(!dentro) b.flags.push('fora');
+    const c = clearAt(b.rc, facingOf(b));
+    b.clear = c.d;
+    if(c.d < 0.60 || !c.alcancavel) b.flags.push('sem-frente');
+    else if(c.d < P.aisleMin) b.flags.push('corredor-curto');
+    if(!b.modelo) b.flags.push('vazia');
+  });
+
+  /* --- sobreposição: só entre unidades que existem fisicamente --- */
+  const fis = bays.filter(b=>b.modelo);
+  const sobre = new Array(fis.length).fill(false);
+  for(let i=0;i<fis.length;i++) for(let j=i+1;j<fis.length;j++)
+    if(overlap(fis[i].rc, fis[j].rc)){ sobre[i]=true; sobre[j]=true; }
+  fis.forEach((b,i)=>{ if(sobre[i]) b.flags.push('sobreposta'); });
+
+  /* --- alocação de unidades (modelo → placa concreta) --- */
+  const pool={};
+  SKUS.forEach(s=>{ if(s.bancada) return; (pool[s.m]=pool[s.m]||[]).push(...rep(s.b,s.q)); });
+  if(S.exist.incluir) pool[EXIST]=rep('—',S.exist.n);
+  const usados={};
+  bays.forEach(b=>{
+    if(parkOf(b)==='existing') b.modelo = EXIST;
+    if(!b.modelo) return;
+    const p=pool[b.modelo];
+    if(p && p.length){ b.board=p.shift(); usados[b.modelo]=(usados[b.modelo]||0)+1; }
+    else { b.flags.push('excesso'); b.board='—'; }
+  });
+  const benchN = S.bench.on ? MODELS.filter(m=>m.bancada).reduce((a,m)=>a+m.q,0) : 0;
+  const pendentes = Object.entries(pool).filter(([,v])=>v.length)
+    .map(([m,v])=>({m, n:v.length})).sort((a,b)=>b.n-a.n);
+
+  /* --- cadeia de bandas em Y --- */
+  const edges=new Set([0,ROOM_H]);
+  S.rows.forEach(r=>{ edges.add(r3(r.y)); edges.add(r3(r.y+P.bayD)); });
+  const ys=[...edges].sort((a,b)=>a-b);
+  const bandas=[];
+  for(let i=0;i<ys.length-1;i++){
+    const a=ys[i], b=ys[i+1], med=r2(b-a);
+    if(med<0.005) continue;
+    const row=S.rows.find(r=>Math.abs(r.y-a)<0.005 && Math.abs(r.y+P.bayD-b)<0.005);
+    if(row){ bandas.push({t:'fila', nome:row.id, med, row}); continue; }
+    const prev=S.rows.filter(r=>Math.abs(r.y+P.bayD-a)<0.005);
+    const next=S.rows.filter(r=>Math.abs(r.y-b)<0.005);
+    let nome='Manobra', tipo='manobra';
+    const costas = prev.some(r=>r.facing==='S') && next.some(r=>r.facing==='N');
+    const frente = prev.some(r=>r.facing==='N') || next.some(r=>r.facing==='S');
+    if(costas && !frente){ nome='Costas com costas'; tipo='costas'; }
+    else if(frente){ nome='Corredor'; tipo='corredor'; }
+    if(a<0.005) nome='Entrada / manobra';
+    else if(Math.abs(b-ROOM_H)<0.005) nome='Manobra / bancada';
+    bandas.push({t:tipo, nome, med, y0:a, y1:b});
+  }
+
+  /* --- cadeia em X --- */
+  const xe=new Set([0,ROOM_W,OFFICE.x1]);
+  S.rows.forEach(r=>{ xe.add(r3(r.x0)); xe.add(rowEnd(r)); });
+  const xs=[...xe].sort((a,b)=>a-b);
+  const xchain=[];
+  for(let i=0;i<xs.length-1;i++){
+    const med=r2(xs[i+1]-xs[i]);
+    if(med>=0.005) xchain.push({x0:xs[i],x1:xs[i+1],med});
+  }
+
+  /* --- portas desimpedidas --- */
+  const portas = DOORS.map(d=>{
+    let livre=true;
+    for(const b of bays) if(overlap(b.rc,d.clear)) livre=false;
+    if(S.work.on && overlap(S.work,d.clear)) livre=false;
+    if(S.bench.on && overlap(S.bench,d.clear)) livre=false;
+    for(const p of S.pilares){
+      const pr = p.tipo==='c' ? {x0:p.x-p.d/2,x1:p.x+p.d/2,y0:p.y-p.d/2,y1:p.y+p.d/2}
+                              : {x0:p.x,x1:p.x+p.w,y0:p.y,y1:p.y+p.h};
+      if(overlap(pr,d.clear)) livre=false;
+    }
+    const ai=Math.floor(d.alvo[0]/G), aj=Math.floor(d.alvo[1]/G);
+    return {...d, livre, alcancavel: reach[aj*GW+ai]===1};
+  });
+
+  /* --- métricas --- */
+  const areaUtil = insideN*G*G;
+  const nBays = bays.length;
+  const colocadas = bays.filter(b=>b.modelo && !b.flags.includes('excesso')).length + benchN;
+  const totalNovas = MODELS.reduce((a,m)=>a+m.q,0);
+  const demanda = totalNovas + (S.exist.incluir ? S.exist.n : 0);
+
+  R = {inside, free, reach, bays, bandas, xchain, portas, pendentes, usados, benchN,
+       metr:{areaUtil, nBays, colocadas, demanda,
+             porColocar: pendentes.reduce((a,p)=>a+p.n,0),
+             m2Baia: nBays? areaUtil/nBays : 0,
+             pctCirc: insideN? freeN/insideN*100 : 0,
+             bolsas: (freeN-reachN)*G*G, maxYreach, portaLivre}};
+  return R;
+}
+function overlap(a,b){ return a.x0<b.x1-1e-9 && a.x1>b.x0+1e-9 && a.y0<b.y1-1e-9 && a.y1>b.y0+1e-9; }
+
+/* ------------------------------- desenho -------------------------------- */
+const PAD_L=30, PAD_R=10, PAD_T=10, PAD_B=26;
+const VW = ROOM_W*M + PAD_L + PAD_R;
+const VH = ROOM_H*M + PAD_T + PAD_B;
+const X = x => r3(PAD_L + x*M);
+const Y = y => r3(PAD_T + (ROOM_H - y)*M);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function bayFill(b){
+  if(!b.modelo) return '#f2f2f0';
+  if(S.colorMode==='board') return BOARD_COLOR[b.board||'—']||'#ddd';
+  if(S.colorMode==='park')  return parkOf(b)==='existing' ? '#b9b9b9' : '#8ab4d8';
+  return MODEL_COLOR[b.modelo]||'#ddd';
+}
+function fitText(txt, maxW, base){
+  let fs=base;
+  const w = t=>t.length*fs*0.52;
+  while(w(txt)>maxW && fs>1.1) fs-=0.1;
+  return fs;
+}
+function labelLines(nome, larg){
+  const ab = ABREV[nome]||nome;
+  const maxW = (larg!==undefined?larg:S.p.bayW)*M-1.2;
+  let fs=fitText(ab,maxW,2.15);
+  if(fs>=1.6) return {lines:[ab], fs, board:true};
+  const i = ab.lastIndexOf(' ');
+  if(i<0) return {lines:[ab], fs:fitText(ab,maxW,1.5), board:false};
+  const l=[ab.slice(0,i), ab.slice(i+1)];
+  const f2=Math.min(fitText(l[0],maxW,2.15), fitText(l[1],maxW,2.15));
+  return {lines:l, fs:f2, board:false};
+}
+
+function render(){
+  const P=S.p, o=[];
+  o.push(`<defs>
+    <pattern id="hach" width="2.2" height="2.2" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="2.2" stroke="#c9cdd2" stroke-width=".5"/></pattern>
+    <pattern id="hachw" width="2.6" height="2.6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="2.6" stroke="#b9c3cc" stroke-width=".55"/></pattern>
+  </defs>`);
+
+  // polígono da sala
+  const pts = POLY.map(([x,y])=>`${X(x)},${Y(y)}`).join(' ');
+  o.push(`<polygon points="${pts}" fill="#fff" stroke="#15181c" stroke-width="1.1"/>`);
+
+  // grelha de 1 m
+  if(view.grid){
+    for(let x=1;x<ROOM_W;x++) o.push(`<line x1="${X(x)}" y1="${Y(0)}" x2="${X(x)}" y2="${Y(ROOM_H)}" stroke="#eceef0" stroke-width=".3"/>`);
+    for(let y=1;y<ROOM_H;y++) o.push(`<line x1="${X(0)}" y1="${Y(y)}" x2="${X(ROOM_W)}" y2="${Y(y)}" stroke="#eceef0" stroke-width=".3"/>`);
+  }
+
+  // gabinete
+  o.push(rect(OFFICE,'#fafafa','#15181c',.6,'2.5 1.5'));
+  o.push(txt((OFFICE.x0+OFFICE.x1)/2,(OFFICE.y0+OFFICE.y1)/2+0.18,'Gabinete',2.6,'#4a5158'));
+  o.push(txt((OFFICE.x0+OFFICE.x1)/2,(OFFICE.y0+OFFICE.y1)/2-0.20,'9,60 m² · não utilizável',2.0,'#7a8188'));
+
+  // área de trabalho
+  if(S.work.on){
+    const w=S.work, a=(w.x1-w.x0)*(w.y1-w.y0);
+    o.push(rect(w,'url(#hachw)','#3d6b8f',.6,'3 2','data-move="work" style="cursor:move"'));
+    o.push(txt((w.x0+w.x1)/2,(w.y0+w.y1)/2+0.20,'Área de trabalho',2.6,'#2d5271'));
+    o.push(txt((w.x0+w.x1)/2,(w.y0+w.y1)/2-0.22,`${nf(a)} m² · ${postos()} postos`,2.0,'#3d6b8f'));
+    // mesas: 2 a sul do gabinete, 2 à parede poente
+    o.push(`<g stroke="#3d6b8f" stroke-width=".45" fill="none">
+      <rect x="${X(w.x0)}" y="${Y(w.y1)}" width="${(w.x1-w.x0)*M}" height="${0.6*M}"/>
+      <rect x="${X(w.x0)}" y="${Y(w.y1-0.6)}" width="${0.6*M}" height="${(w.y1-w.y0-0.6)*M}"/></g>`);
+    o.push(handle(w.x1,w.y1,'work'));
+  }
+  // bancada Smart top
+  if(S.bench.on){
+    const b=S.bench;
+    o.push(rect(b,'#efeae0','#8a5a00',.6,'2 1.5','data-move="bench" style="cursor:move"'));
+    o.push(txt((b.x0+b.x1)/2,(b.y0+b.y1)/2,`Bancada Smart top · ${nf(b.x1-b.x0)} m`,2.0,'#8a5a00'));
+    o.push(handle(b.x1,b.y1,'bench'));
+  }
+  // pilares e caixas
+  S.pilares.forEach((p,i)=>{
+    if(p.tipo==='c') o.push(`<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="${p.d/2*M}" fill="#d9d9d9" stroke="#15181c" stroke-width=".7"/>`);
+    else o.push(rect({x0:p.x,y0:p.y,x1:p.x+p.w,y1:p.y+p.h},'#d9d9d9','#15181c',.7));
+    o.push(txt(p.tipo==='c'?p.x:p.x+p.w/2, (p.tipo==='c'?p.y:p.y+p.h/2)-0.02, 'P'+(i+1),2,'#15181c'));
+  });
+  S.caixas.forEach((c,i)=>{
+    o.push(`<g><line x1="${X(c.x)-2}" y1="${Y(c.y)}" x2="${X(c.x)+2}" y2="${Y(c.y)}" stroke="#a01b1b" stroke-width=".6"/>
+      <line x1="${X(c.x)}" y1="${Y(c.y)-2}" x2="${X(c.x)}" y2="${Y(c.y)+2}" stroke="#a01b1b" stroke-width=".6"/></g>`);
+    o.push(txt(c.x+0.28,c.y+0.16,'C'+(i+1),1.8,'#a01b1b'));
+  });
+
+  // baias, por fila
+  S.rows.forEach(row=>{
+    const isSel = selRow===row.id;
+    o.push(`<g data-row="${row.id}" style="cursor:${(row.park==='existing'&&S.exist.fixas)?'not-allowed':'ns-resize'}">`);
+    o.push(R.bays.filter(b=>b.tipo==='baia' && b.row===row).map(drawUnid).join('\n'));
+    // etiqueta da fila
+    const lx = row.x0>0.5 ? row.x0-0.10 : rowEnd(row)+0.10;
+    const anchor = row.x0>0.5 ? 'end':'start';
+    o.push(`<text x="${X(lx)}" y="${Y(row.y+P.bayD/2)+1}" font-size="2.8" font-weight="700"
+      text-anchor="${anchor}" fill="${isSel?'#0b57a4':'#15181c'}">${row.id}</text>`);
+    o.push(`</g>`);
+  });
+
+  // máquinas soltas
+  R.bays.filter(b=>b.tipo==='solta').forEach(b=>{
+    o.push(`<g data-solta="${b.u.id}" style="cursor:${fixa(b)?'not-allowed':'move'}">${drawUnid(b)}</g>`);
+  });
+
+  // portas
+  DOORS.forEach(d=>{
+    if(d.tipo==='h'){
+      o.push(`<line x1="${X(d.x0)}" y1="${Y(d.y)}" x2="${X(d.x1)}" y2="${Y(d.y)}" stroke="#d2691e" stroke-width="2.2"/>`);
+      o.push(`<path d="M ${X(d.x0)} ${Y(d.y)} A ${(d.x1-d.x0)*M} ${(d.x1-d.x0)*M} 0 0 0 ${X(d.x0)} ${Y(d.y)-(d.x1-d.x0)*M}" fill="none" stroke="#d2691e" stroke-width=".4" stroke-dasharray="1.5 1"/>`);
+    }else{
+      o.push(`<line x1="${X(d.x)}" y1="${Y(d.y0)}" x2="${X(d.x)}" y2="${Y(d.y1)}" stroke="#d2691e" stroke-width="2.2"/>`);
+      o.push(`<path d="M ${X(d.x)} ${Y(d.y1)} A ${(d.y1-d.y0)*M} ${(d.y1-d.y0)*M} 0 0 1 ${X(d.x)+(d.y1-d.y0)*M} ${Y(d.y1)}" fill="none" stroke="#d2691e" stroke-width=".4" stroke-dasharray="1.5 1"/>`);
+    }
+  });
+
+  // cotas
+  if(view.dims){
+    const lx = PAD_L-4;
+    o.push(`<line x1="${lx}" y1="${Y(0)}" x2="${lx}" y2="${Y(ROOM_H)}" stroke="#4a5158" stroke-width=".35"/>`);
+    R.bandas.forEach(b=>{
+      const y0 = b.t==='fila' ? b.row.y : b.y0;
+      const y1 = b.t==='fila' ? r3(b.row.y+P.bayD) : b.y1;
+      const cy = (y0+y1)/2;
+      [y0,y1].forEach(yy=>o.push(`<line x1="${lx-1.6}" y1="${Y(yy)}" x2="${lx+1.6}" y2="${Y(yy)}" stroke="#4a5158" stroke-width=".35"/>`));
+      const cor = (b.t==='corredor'||b.t==='manobra') && b.med < P.aisleMin ? '#a01b1b':'#15181c';
+      o.push(`<text transform="translate(${lx-2.4},${Y(cy)}) rotate(-90)" text-anchor="middle"
+        font-size="2.5" fill="${cor}">${nf(b.med)}</text>`);
+      o.push(`<text transform="translate(${lx-7.2},${Y(cy)}) rotate(-90)" text-anchor="middle"
+        font-size="1.9" fill="#7a8188">${esc(b.t==='fila'?b.nome:b.nome)}</text>`);
+    });
+    const by = Y(0)+6;
+    o.push(`<line x1="${X(0)}" y1="${by}" x2="${X(ROOM_W)}" y2="${by}" stroke="#4a5158" stroke-width=".35"/>`);
+    R.xchain.forEach(c=>{
+      [c.x0,c.x1].forEach(xx=>o.push(`<line x1="${X(xx)}" y1="${by-1.6}" x2="${X(xx)}" y2="${by+1.6}" stroke="#4a5158" stroke-width=".35"/>`));
+      o.push(txtAbs((X(c.x0)+X(c.x1))/2, by+4.4, nf(c.med), 2.5, '#15181c'));
+    });
+    o.push(txtAbs(X(ROOM_W/2), by+9.6, `total 7,35 m × 13,90 m  ·  ${nf(R.metr.areaUtil)} m² úteis  ·  escala 1:75`, 2.4, '#4a5158'));
+  }
+
+  const svg=document.getElementById('plan');
+  svg.setAttribute('viewBox',`0 0 ${r3(VW)} ${r3(VH)}`);
+  svg.setAttribute('font-family','ui-sans-serif,system-ui,-apple-system,sans-serif');
+  svg.style.setProperty('--pw', r2(VW)+'mm');
+  svg.style.setProperty('--ph', r2(VH)+'mm');
+  svg.innerHTML = o.join('\n');
+  applyZoom();
+  wirePlan();
+}
+/* Desenha uma unidade — baia de fila ou máquina solta. A frente é marcada com
+   um traço grosso na aresta correspondente à orientação. */
+function drawUnid(b){
+  const o=[], rc=b.rc, f=facingOf(b), horiz = f==='E'||f==='W';
+  const bad  = ['fora','sem-frente','excesso','sobreposta'].some(x=>b.flags.includes(x));
+  const warn = b.flags.includes('corredor-curto');
+  const attr = b.tipo==='solta' ? `data-solta="${b.u.id}"` : `data-bay="${b.row.id}:${b.k}"`;
+  const w=(rc.x1-rc.x0)*M, h=(rc.y1-rc.y0)*M;
+  o.push(`<rect ${attr} x="${X(rc.x0)}" y="${Y(rc.y1)}" width="${r3(w)}" height="${r3(h)}"
+    fill="${b.modelo?bayFill(b):'url(#hach)'}" stroke="${bad?'#a01b1b':warn?'#8a5a00':'#4a5158'}"
+    stroke-width="${bad||warn?1.0:.5}"${b.tipo==='solta'?' stroke-dasharray="0"':''}/>`);
+  if(b.tipo==='solta') o.push(`<rect x="${X(rc.x0)+0.35}" y="${Y(rc.y1)+0.35}" width="${r3(w-0.7)}" height="${r3(h-0.7)}"
+    fill="none" stroke="#0b57a4" stroke-width=".35" stroke-dasharray="1.2 1"/>`);
+  if(isSel(b)) o.push(`<rect x="${X(rc.x0)+0.7}" y="${Y(rc.y1)+0.7}" width="${r3(w-1.4)}" height="${r3(h-1.4)}"
+    fill="none" stroke="#0b57a4" stroke-width="1.1"/>`);
+  if(horiz){
+    const fx = f==='W' ? rc.x0 : rc.x1, off = f==='W' ? 0.7 : -0.7;
+    o.push(`<line x1="${X(fx)+off}" y1="${Y(rc.y0)-0.5}" x2="${X(fx)+off}" y2="${Y(rc.y1)+0.5}" stroke="#15181c" stroke-width="1.1"/>`);
+  }else{
+    const fy = f==='S' ? rc.y0 : rc.y1, off = f==='S' ? -0.7 : 0.7;
+    o.push(`<line x1="${X(rc.x0)+0.5}" y1="${Y(fy)+off}" x2="${X(rc.x1)-0.5}" y2="${Y(fy)+off}" stroke="#15181c" stroke-width="1.1"/>`);
+  }
+  if(view.labels && b.modelo){
+    const L=labelLines(b.modelo, rc.x1-rc.x0), cx=(rc.x0+rc.x1)/2, cy=(rc.y0+rc.y1)/2;
+    if(L.lines.length===1){
+      o.push(txt(cx, cy+(L.board?0.10:0), L.lines[0], L.fs, '#15181c'));
+      if(L.board) o.push(txt(cx, cy-0.14, BOARD_CODE[b.board||'—']||'', 1.5,'#5b6169'));
+    }else{
+      o.push(txt(cx, cy+0.11, L.lines[0], L.fs,'#15181c'));
+      o.push(txt(cx, cy-0.13, L.lines[1], L.fs,'#15181c'));
+    }
+  }
+  if(b.flags.includes('excesso'))    o.push(txt((rc.x0+rc.x1)/2, rc.y0+0.10,'!',2.4,'#a01b1b'));
+  if(b.flags.includes('sobreposta')) o.push(txt(rc.x0+0.12, rc.y1-0.12,'⨯',2.6,'#a01b1b'));
+  return o.join('\n');
+}
+function rect(r,fill,stroke,sw,dash,attrs){
+  return `<rect x="${X(r.x0)}" y="${Y(r.y1)}" width="${r3((r.x1-r.x0)*M)}" height="${r3((r.y1-r.y0)*M)}"
+    fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash?` stroke-dasharray="${dash}"`:''}${attrs?' '+attrs:''}/>`;
+}
+function txt(x,y,t,fs,c){ return `<text x="${X(x)}" y="${Y(y)+fs*0.36}" text-anchor="middle" font-size="${r2(fs)}" fill="${c}">${esc(t)}</text>`; }
+function txtAbs(x,y,t,fs,c){ return `<text x="${r3(x)}" y="${r3(y)}" text-anchor="middle" font-size="${r2(fs)}" fill="${c}">${esc(t)}</text>`; }
+function handle(x,y,kind){
+  return `<rect data-handle="${kind}" x="${X(x)-2}" y="${Y(y)-2}" width="4" height="4"
+    fill="#fff" stroke="#0b57a4" stroke-width=".7" style="cursor:nwse-resize"/>`;
+}
+function postos(){
+  const w=S.work; if(!w.on) return 0;
+  return Math.floor((w.x1-w.x0)/1.20) + Math.floor((w.y1-w.y0)/1.20);
+}
+
+/* --------------------------- zoom e interacção --------------------------- */
+function applyZoom(){
+  const svg=document.getElementById('plan');
+  if(zoom===null){
+    const pane=document.getElementById('planScroll');
+    const h=pane.clientHeight-28, w=pane.clientWidth-28;
+    zoom=Math.max(1.2, Math.min(h/VH, w/VW));
+  }
+  svg.style.width=(VW*zoom)+'px';
+  svg.style.height=(VH*zoom)+'px';
+}
+function svgPoint(ev){
+  const svg=document.getElementById('plan');
+  const ctm=svg.getScreenCTM().inverse();
+  const p=new DOMPoint(ev.clientX,ev.clientY).matrixTransform(ctm);
+  return {x:(p.x-PAD_L)/M, y:ROOM_H-(p.y-PAD_T)/M};
+}
+function wirePlan(){
+  const svg=document.getElementById('plan');
+  svg.querySelectorAll('[data-bay]').forEach(el=>{
+    el.addEventListener('click',ev=>{
+      ev.stopPropagation();
+      const [rid,k]=el.dataset.bay.split(':');
+      sel={tipo:'baia', rid, k:+k}; selRow=rid; renderUI(); render();
+    });
+    el.addEventListener('dragover',ev=>{ ev.preventDefault(); ev.stopPropagation(); el.setAttribute('stroke-width','1.6'); });
+    el.addEventListener('dragleave',()=>render());
+    el.addEventListener('drop',ev=>{
+      ev.preventDefault(); ev.stopPropagation();
+      const m=ev.dataTransfer.getData('text/plain'); if(!m) return;
+      const [rid,k]=el.dataset.bay.split(':');
+      const row=S.rows.find(r=>r.id===rid); if(!row) return;
+      row.a[+k]=m; recalc();
+    });
+  });
+
+  // máquinas soltas: selecção e arrastamento livre em X e Y
+  svg.querySelectorAll('[data-solta]').forEach(g=>{
+    g.addEventListener('click',ev=>{
+      ev.stopPropagation();
+      sel={tipo:'solta', id:g.dataset.solta}; renderUI(); render();
+    });
+    g.addEventListener('pointerdown',ev=>{
+      const u=S.soltas.find(x=>x.id===g.dataset.solta); if(!u) return;
+      if(u.parque==='existing' && S.exist.fixas) return;
+      sel={tipo:'solta', id:u.id};
+      const p0=svgPoint(ev), o={x:u.x, y:u.y};
+      const f=footprint(u), w=f.x1-f.x0, h=f.y1-f.y0;
+      const sn=v=>r2(Math.round(v/0.05)*0.05);
+      let moveu=false;
+      const move=e2=>{
+        const p=svgPoint(e2); moveu=true;
+        u.x=Math.max(0, Math.min(r2(ROOM_W-w), sn(o.x+(p.x-p0.x))));
+        u.y=Math.max(0, Math.min(r2(ROOM_H-h), sn(o.y+(p.y-p0.y))));
+        recalc();
+      };
+      const up=()=>{
+        window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up);
+        if(!moveu){ renderUI(); render(); }
+      };
+      window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
+    });
+  });
+
+  svg.querySelectorAll('[data-row]').forEach(g=>{
+    g.addEventListener('pointerdown',ev=>{
+      const row=S.rows.find(r=>r.id===g.dataset.row); if(!row) return;
+      if(row.park==='existing' && S.exist.fixas) return;
+      selRow=row.id;
+      const p0=svgPoint(ev), y0=row.y;
+      const move=e2=>{
+        const p=svgPoint(e2);
+        row.y=Math.max(0,Math.min(ROOM_H-S.p.bayD, r2(Math.round((y0+(p.y-p0.y))/0.05)*0.05)));
+        S.layoutMode='manual'; recalc();
+      };
+      const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+      window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
+    });
+  });
+  svg.querySelectorAll('[data-handle]').forEach(h=>{
+    h.addEventListener('pointerdown',ev=>{
+      ev.stopPropagation();
+      const t = h.dataset.handle==='work' ? S.work : S.bench;
+      const move=e2=>{
+        const p=svgPoint(e2);
+        t.x1=Math.max(t.x0+0.4, Math.min(ROOM_W, r2(Math.round(p.x/0.05)*0.05)));
+        t.y1=Math.max(t.y0+0.4, Math.min(ROOM_H, r2(Math.round(p.y/0.05)*0.05)));
+        recalc();
+      };
+      const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+      window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
+    });
+  });
+  // arrastar áreas (trabalho / bancada) pelo interior
+  svg.querySelectorAll('[data-move]').forEach(el=>{
+    el.addEventListener('pointerdown',ev=>{
+      ev.stopPropagation();
+      const t = el.dataset.move==='work' ? S.work : S.bench;
+      const p0=svgPoint(ev), o={x0:t.x0,y0:t.y0,x1:t.x1,y1:t.y1};
+      const snap=v=>r2(Math.round(v/0.05)*0.05);
+      const move=e2=>{
+        const p=svgPoint(e2);
+        let dx=snap(p.x-p0.x), dy=snap(p.y-p0.y);
+        dx=Math.max(-o.x0, Math.min(ROOM_W-o.x1, dx));
+        dy=Math.max(-o.y0, Math.min(ROOM_H-o.y1, dy));
+        t.x0=r2(o.x0+dx); t.x1=r2(o.x1+dx); t.y0=r2(o.y0+dy); t.y1=r2(o.y1+dy);
+        recalc();
+      };
+      const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+      window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
+    });
+  });
+}
+/* Ouvintes do próprio <svg>: registados uma única vez. render() substitui os
+   filhos mas não o elemento, pelo que registá-los em wirePlan() acumulava um
+   ouvinte por redesenho — um único largar criava N máquinas. */
+function initPlanOnce(){
+  const svg=document.getElementById('plan');
+  svg.addEventListener('click',ev=>{ if(ev.target===svg){ sel=null; renderUI(); render(); } });
+  svg.addEventListener('dragover',ev=>ev.preventDefault());
+  svg.addEventListener('drop',ev=>{
+    ev.preventDefault();
+    const m=ev.dataTransfer.getData('text/plain'); if(!m) return;
+    const p=svgPoint(ev);
+    const u=criarSolta(m===EXIST?null:m, p.x, p.y);
+    if(m===EXIST){ u.parque='existing'; u.m=EXIST; }
+    sel={tipo:'solta', id:u.id};
+    recalc();
+  });
+}
+
+/* ------------------------------ painéis UI ------------------------------ */
+function renderUI(){
+  const m=R.metr;
+  document.getElementById('modeChip').textContent =
+    S.layoutMode==='bands' ? 'disposição: bandas' : 'disposição: manual';
+  document.getElementById('modeChip').className = 'chip '+(S.layoutMode==='bands'?'ok':'warn');
+
+  document.getElementById('metrics').innerHTML = [
+    ['Unidades', m.nBays], ['das quais soltas', S.soltas.length],
+    ['Colocadas', m.colocadas], ['Por colocar', m.porColocar],
+    ['Inventário', m.demanda], ['m²/unid.', nf(m.m2Baia)], ['Circulação', nf(m.pctCirc,1)+' %'],
+    ['Área útil', nf(m.areaUtil)+' m²']
+  ].map(([k,v])=>`<div class="met"><b>${v}</b><span>${k}</span></div>`).join('');
+
+  renderRules(); renderBands(); renderRows(); renderSliders();
+  renderWork(); renderBench(); renderExist(); renderInv();
+  renderObst(); renderScen(); renderLegend();
+}
+
+function renderRules(){
+  const m=R.metr, P=S.p, li=[];
+  const add=(st,t,d)=>li.push(`<li><span class="dot ${st}"></span><span><b>${t}</b><small>${d}</small></span></li>`);
+
+  const lista = a => a.map(nomeUnid).join(', ');
+  const fora=R.bays.filter(b=>b.flags.includes('fora'));
+  add(fora.length?'bad':'', '1 · Unidades dentro do espaço utilizável',
+    fora.length ? `${fora.length} unidade(s) fora do polígono, dentro do gabinete ou sobre pilar: `+lista(fora)
+    : 'Todas as unidades dentro do polígono, fora do gabinete e sem sobreposição de pilares.');
+
+  const sf=R.bays.filter(b=>b.flags.includes('sem-frente'));
+  add(sf.length?'bad':'', '2 · Frente para corredor',
+    sf.length ? `${sf.length} unidade(s) com a frente para parede, para as costas de outra máquina ou `+
+      `para um espaço isolado: `+lista(sf)
+    : 'Todas as unidades têm ≥ 0,60 m livres em frente, ligados à circulação principal.');
+
+  const sob=R.bays.filter(b=>b.flags.includes('sobreposta'));
+  if(sob.length) add('bad','Unidades sobrepostas',
+    `${sob.length} unidade(s) a ocupar o mesmo espaço: `+lista(sob));
+
+  const p0=R.portas[0], p1=R.portas[1];
+  const conNorte = m.maxYreach >= 13.40;
+  const conGab = p1.alcancavel;
+  add((!m.portaLivre||!conGab||!conNorte)?'bad':'', '3 · Circulação contínua',
+    !m.portaLivre ? 'Porta exterior obstruída — sem ponto de partida.' :
+    `Porta do gabinete: ${conGab?'alcançável':'INALCANÇÁVEL'}. `+
+    `Extremo norte: ${conNorte?'alcançável':'INALCANÇÁVEL'} (alcance máximo y = ${nf(m.maxYreach)} m). `+
+    `Bolsas isoladas: ${nf(m.bolsas)} m².`);
+
+  const curtos=R.bandas.filter(b=>(b.t==='corredor'||b.t==='manobra') && b.med<P.aisleMin);
+  add(curtos.length?'bad':'', `4 · Largura mínima de corredor (${nf(P.aisleMin)} m)`,
+    curtos.length ? curtos.map(b=>`${b.nome} ${nf(b.med)} m`).join(' · ')+
+      ` — abaixo do mínimo em ${curtos.length} banda(s).`
+    : 'Todos os corredores e bandas de manobra cumprem o mínimo.');
+
+  const pb=R.portas.filter(p=>!p.livre);
+  add(pb.length?'bad':'', '5 · Vãos de porta desimpedidos (1,10 m)',
+    pb.length ? pb.map(p=>p.nome).join(', ')+' com obstrução na faixa de 1,10 m.'
+    : 'Faixa de 1,10 m livre em frente das duas portas.');
+
+  const exc=R.bays.filter(b=>b.flags.includes('excesso'));
+  add(m.porColocar||exc.length ? 'warn':'', '6 · Contagem face ao inventário',
+    (exc.length?`${exc.length} unidade(s) sem exemplar disponível em inventário (${lista(exc)}). `:'')+
+    `${m.colocadas} de ${m.demanda} máquinas colocadas`+
+    (R.benchN?` (inclui ${R.benchN} de bancada)`:'')+
+    `. Por colocar: `+(R.pendentes.length? R.pendentes.map(p=>`${p.m} ×${p.n}`).join(', '):'nenhuma')+'.');
+
+  if(P.bayD < 0.732) add('bad','Profundidade de baia insuficiente',
+    `${nf(P.bayD)} m < 0,732 m — o cabinete mais fundo do catálogo (700×732 mm) não cabe.`);
+  else if(P.bayD < 0.80) add('warn','Profundidade abaixo do módulo',
+    `${nf(P.bayD)} m: folga de apenas ${Math.round((P.bayD-0.732)*1000)} mm sobre o cabinete de 732 mm (o módulo de 0,80 dá 68 mm).`);
+
+  S.rows.forEach(r=>{
+    const res=r2(ROOM_W-rowEnd(r));
+    if(res<0) add('bad',`Fila ${r.id} excede a parede nascente`, `${nf(-res)} m além de x = 7,35.`);
+  });
+
+  document.getElementById('rules').innerHTML=li.join('');
+}
+
+function renderBands(){
+  const P=S.p;
+  const rows=R.bandas.map(b=>{
+    const curto=(b.t==='corredor'||b.t==='manobra') && b.med<P.aisleMin;
+    const extra = b.t==='fila'
+      ? `frente ${b.row.facing==='S'?'sul':'norte'} · ${b.row.n} baias · folga frontal ${nf(Math.min(...R.bays.filter(x=>x.row===b.row).map(x=>x.clear)))} m`
+      : '';
+    return `<tr><td>${esc(b.nome)}</td><td class="n">${nf(b.med)}</td>
+      <td>${curto?'<span class="chip bad">&lt; mín.</span>':''} <small style="color:var(--ink2)">${esc(extra)}</small></td></tr>`;
+  }).join('');
+  const tot=R.bandas.reduce((a,b)=>a+b.med,0);
+  document.getElementById('bands').innerHTML =
+    `<tr><th>Banda</th><th class="n">m</th><th></th></tr>${rows}
+     <tr><th>Total</th><th class="n">${nf(tot)}</th><th></th></tr>`;
+  document.getElementById('xchain').innerHTML =
+    `<tr><th>De → a (x)</th><th class="n">m</th></tr>`+
+    R.xchain.map(c=>`<tr><td>${nf(c.x0)} → ${nf(c.x1)}</td><td class="n">${nf(c.med)}</td></tr>`).join('');
+}
+
+function renderSliders(){
+  const P=S.p;
+  const defs=[
+    ['aisle','Largura de corredor',0.80,2.00,0.05],
+    ['bayD','Profundidade de baia',0.60,1.00,0.01],
+    ['bayW','Largura de baia',0.60,0.90,0.01],
+    ['backGap','Folga entre costas',0.00,0.30,0.01],
+    ['startGap','Banda de entrada',0.50,2.50,0.05],
+    ['aisleMin','Mínimo de corredor (regra)',0.90,1.60,0.05]
+  ];
+  document.getElementById('sliders').innerHTML = defs.map(([k,lab,a,b,st])=>
+    `<label class="row"><span>${lab}</span>
+      <input type="range" data-p="${k}" min="${a}" max="${b}" step="${st}" value="${P[k]}">
+      <span class="val" data-v="${k}">${nf(P[k])}</span></label>`).join('');
+  document.querySelectorAll('#sliders input[type=range]').forEach(inp=>{
+    inp.oninput=()=>{
+      S.p[inp.dataset.p]=+inp.value;
+      if(['aisle','bayD','backGap','startGap'].includes(inp.dataset.p) && S.layoutMode==='bands') reflow();
+      recalc();
+    };
+  });
+}
+
+function renderRows(){
+  const t=document.getElementById('rowsTbl');
+  t.innerHTML = `<tr><th>Fila</th><th class="n">y</th><th class="n">x₀</th><th class="n">baias</th>
+    <th>frente</th><th>parque</th><th class="n">folga E</th><th></th></tr>`+
+    S.rows.map(r=>{
+      const res=r2(ROOM_W-rowEnd(r));
+      return `<tr class="${selRow===r.id?'sel':''}" data-rid="${r.id}">
+      <td><b>${r.id}</b></td>
+      <td class="n"><input class="mini" data-f="y" value="${nf(r.y)}"></td>
+      <td class="n"><input class="mini" data-f="x0" value="${nf(r.x0)}"></td>
+      <td class="n"><input class="mini" data-f="n" value="${r.n}"></td>
+      <td><button class="sm" data-a="flip">${r.facing==='S'?'sul ↓':'norte ↑'}</button></td>
+      <td><button class="sm" data-a="park">${r.park==='existing'?'exist.':'novo'}</button></td>
+      <td class="n" style="${res<0?'color:var(--bad);font-weight:700':''}">${nf(res)}</td>
+      <td style="white-space:nowrap">
+        <button class="sm" data-a="dup" title="duplicar">⧉</button><button class="sm" data-a="del" title="remover">✕</button></td></tr>`;
+    }).join('');
+
+  t.querySelectorAll('tr[data-rid]').forEach(tr=>{
+    const row=S.rows.find(r=>r.id===tr.dataset.rid);
+    tr.onclick=e=>{ if(e.target.tagName==='TD'||e.target.tagName==='B'){ selRow=row.id; renderUI(); render(); } };
+    tr.querySelectorAll('input[data-f]').forEach(inp=>{
+      inp.onchange=()=>{
+        const v=parseFloat(String(inp.value).replace(',','.'));
+        if(isNaN(v)) return renderUI();
+        if(inp.dataset.f==='n'){ const n=Math.max(1,Math.round(v)); row.a.length=n; row.n=n; }
+        else { row[inp.dataset.f]=r2(v); if(inp.dataset.f==='y') S.layoutMode='manual'; }
+        recalc();
+      };
+    });
+    tr.querySelector('[data-a=flip]').onclick=()=>{ row.facing = row.facing==='S'?'N':'S'; recalc(); };
+    tr.querySelector('[data-a=park]').onclick=()=>{
+      row.park = row.park==='existing'?'new':'existing';
+      if(row.park==='existing') row.a=rep(EXIST,row.n); else row.a=rep(null,row.n);
+      recalc();
+    };
+    tr.querySelector('[data-a=dup]').onclick=()=>{
+      const c=JSON.parse(JSON.stringify(row));
+      c.id=nextId(); c.y=r2(Math.min(ROOM_H-S.p.bayD, row.y+S.p.bayD+S.p.aisle));
+      c.facing = row.facing==='S'?'N':'S';
+      S.rows.push(c); S.layoutMode='manual'; recalc();
+    };
+    tr.querySelector('[data-a=del]').onclick=()=>{
+      S.rows=S.rows.filter(r=>r!==row); if(selRow===row.id) selRow=null; recalc();
+    };
+  });
+
+  // caixa da unidade selecionada
+  const box=document.getElementById('selBox');
+  const b = sel ? R.bays.find(isSel) : null;
+  if(!sel || !b){
+    box.innerHTML='<span style="color:var(--ink2)">Nada selecionado. Clica numa baia ou numa máquina solta no plano.</span>';
+  }else{
+    const geo=`${nf(b.rc.x0)}–${nf(b.rc.x1)} × ${nf(b.rc.y0)}–${nf(b.rc.y1)} m`;
+    const FRENTE={S:'sul ↓',N:'norte ↑',E:'nascente →',W:'poente ←'};
+    const modeloAtual = b.modelo;
+    box.innerHTML =
+      `<b>${b.tipo==='solta'?'Máquina solta '+b.u.id:'Baia '+b.row.id+' / '+(b.k+1)}</b> — ${geo}
+       <br>Frente <b>${FRENTE[facingOf(b)]}</b> · folga frontal <b>${nf(b.clear)} m</b>
+       ${b.board&&b.modelo?` · placa <b>${esc(b.board)}</b>`:''}
+       ${b.flags.length?'<br>'+b.flags.map(f=>`<span class="chip ${f==='vazia'?'':'bad'}">${esc(f)}</span>`).join(' '):''}
+       <br><select id="selModel" style="margin-top:5px;max-width:200px">
+         <option value="">(vazia)</option>
+         ${FLOOR_MODELS.map(m=>`<option ${modeloAtual===m.m?'selected':''}>${esc(m.m)}</option>`).join('')}
+         ${modeloAtual===EXIST?`<option selected>${EXIST}</option>`:''}
+       </select>
+       <div class="bar" style="margin:6px 0 0">${
+         b.tipo==='solta'
+         ? `<button class="sm" id="uRot">Rodar (R)</button>
+            <button class="sm" id="uDup">Duplicar</button>
+            <button class="sm" id="uPark">${b.u.parque==='existing'?'exist.':'novo'}</button>
+            <button class="sm" id="uDel">Apagar</button>
+            <span style="align-self:center;color:var(--ink2)">x</span>
+            <input class="mini" id="uX" value="${nf(b.u.x)}">
+            <span style="align-self:center;color:var(--ink2)">y</span>
+            <input class="mini" id="uY" value="${nf(b.u.y)}">`
+         : `<button class="sm" id="bDetach">Destacar → máquina solta</button>`
+       }</div>`;
+    document.getElementById('selModel').onchange=ev=>{
+      const v=ev.target.value||null;
+      if(b.tipo==='solta') b.u.m=v; else S.rows.find(r=>r.id===sel.rid).a[sel.k]=v;
+      recalc();
+    };
+    if(b.tipo==='solta'){
+      document.getElementById('uRot').onclick=()=>{ rodar(b.u); recalc(); };
+      document.getElementById('uDup').onclick=()=>{
+        const c=criarSolta(b.u.m, b.rc.x0+(b.rc.x1-b.rc.x0)*1.5, (b.rc.y0+b.rc.y1)/2, b.u.facing);
+        c.parque=b.u.parque; sel={tipo:'solta', id:c.id}; recalc();
+      };
+      document.getElementById('uPark').onclick=()=>{
+        b.u.parque = b.u.parque==='existing' ? 'new' : 'existing';
+        b.u.m = b.u.parque==='existing' ? EXIST : null; recalc();
+      };
+      document.getElementById('uDel').onclick=()=>{
+        S.soltas=S.soltas.filter(x=>x!==b.u); sel=null; recalc();
+      };
+      ['X','Y'].forEach(ax=>document.getElementById('u'+ax).onchange=ev=>{
+        const v=parseFloat(String(ev.target.value).replace(',','.'));
+        if(!isNaN(v)) b.u[ax.toLowerCase()]=r2(v); recalc();
+      });
+    }else{
+      document.getElementById('bDetach').onclick=()=>{
+        const row=S.rows.find(r=>r.id===sel.rid);
+        const u=criarSolta(row.a[sel.k], (b.rc.x0+b.rc.x1)/2, (b.rc.y0+b.rc.y1)/2, row.facing);
+        u.parque = row.park==='existing' ? 'existing' : 'new';
+        u.x=b.rc.x0; u.y=b.rc.y0;   // fica exactamente onde estava, sem salto à grelha
+        row.a[sel.k]=null;
+        sel={tipo:'solta', id:u.id}; recalc();
+      };
+    }
+  }
+  renderSoltas();
+}
+/* Roda 90° no sentido dos ponteiros mantendo o centro do envelope. Sem
+   arredondar à grelha: quatro rotações devolvem exactamente a posição inicial. */
+function rodar(u){
+  const ORDEM={S:'W', W:'N', N:'E', E:'S'};
+  const f0=footprint(u), cx=(f0.x0+f0.x1)/2, cy=(f0.y0+f0.y1)/2;
+  u.facing=ORDEM[u.facing]||'S';
+  const f1=footprint(u), w=f1.x1-f1.x0, h=f1.y1-f1.y0;
+  u.x=Math.max(0, Math.min(r3(ROOM_W-w), r3(cx-w/2)));
+  u.y=Math.max(0, Math.min(r3(ROOM_H-h), r3(cy-h/2)));
+}
+function renderSoltas(){
+  const t=document.getElementById('soltasTbl');
+  if(!S.soltas.length){ t.innerHTML='<tr><td style="color:var(--ink2)">Sem máquinas soltas.</td></tr>'; return; }
+  const FR={S:'sul',N:'norte',E:'nasc.',W:'poente'};
+  t.innerHTML=`<tr><th>#</th><th>modelo</th><th class="n">x</th><th class="n">y</th><th>frente</th><th class="n">folga</th><th></th></tr>`+
+    S.soltas.map(u=>{
+      const b=R.bays.find(x=>x.tipo==='solta' && x.u===u);
+      const mal=b&&['fora','sem-frente','excesso','sobreposta'].some(f=>b.flags.includes(f));
+      return `<tr data-uid="${u.id}" class="${sel&&sel.tipo==='solta'&&sel.id===u.id?'sel':''}">
+        <td><b>${u.id}</b></td><td>${esc(ABREV[u.m]||u.m||'—')}</td>
+        <td class="n"><input class="mini" data-f="x" value="${nf(u.x)}"></td>
+        <td class="n"><input class="mini" data-f="y" value="${nf(u.y)}"></td>
+        <td><button class="sm" data-a="rot">${FR[u.facing]}</button></td>
+        <td class="n" style="${mal?'color:var(--bad);font-weight:700':''}">${b?nf(b.clear):'—'}</td>
+        <td><button class="sm" data-a="del">✕</button></td></tr>`;
+    }).join('');
+  t.querySelectorAll('tr[data-uid]').forEach(tr=>{
+    const u=S.soltas.find(x=>x.id===tr.dataset.uid);
+    tr.querySelectorAll('input[data-f]').forEach(i=>i.onchange=()=>{
+      const v=parseFloat(String(i.value).replace(',','.')); if(!isNaN(v)) u[i.dataset.f]=r2(v); recalc();
+    });
+    tr.querySelector('[data-a=rot]').onclick=()=>{ rodar(u); recalc(); };
+    tr.querySelector('[data-a=del]').onclick=()=>{
+      S.soltas=S.soltas.filter(x=>x!==u);
+      if(sel&&sel.tipo==='solta'&&sel.id===u.id) sel=null; recalc();
+    };
+    tr.onclick=e=>{ if(e.target.tagName==='TD'||e.target.tagName==='B'){ sel={tipo:'solta',id:u.id}; renderUI(); render(); } };
+  });
+}
+function nextId(){
+  let i=1; while(S.rows.some(r=>r.id==='R'+i)) i++; return 'R'+i;
+}
+
+function renderWork(){
+  const w=S.work;
+  document.getElementById('workCtl').innerHTML=
+    `<label class="row"><span>Activa</span><input type="checkbox" id="wOn" ${w.on?'checked':''}></label>`+
+    ['x0','y0','x1','y1'].map(f=>`<label class="row"><span>${f}</span>
+      <input class="mini" data-w="${f}" value="${nf(w[f])}"></label>`).join('')+
+    `<p class="hint">${nf((w.x1-w.x0)*(w.y1-w.y0))} m² · ${postos()} postos
+     (1,20 m de mesa por pessoa: ${Math.floor((w.x1-w.x0)/1.2)} na parede sul do gabinete +
+     ${Math.floor((w.y1-w.y0)/1.2)} na parede poente). Arrasta o quadrado azul no plano para redimensionar.</p>`;
+  document.getElementById('wOn').onchange=e=>{ S.work.on=e.target.checked; recalc(); };
+  document.querySelectorAll('[data-w]').forEach(i=>i.onchange=()=>{
+    const v=parseFloat(String(i.value).replace(',','.')); if(!isNaN(v)) S.work[i.dataset.w]=r2(v); recalc();
+  });
+}
+function renderBench(){
+  const b=S.bench;
+  document.getElementById('benchCtl').innerHTML=
+    `<label class="row"><span>Activa</span><input type="checkbox" id="bOn" ${b.on?'checked':''}></label>`+
+    ['x0','y0','x1','y1'].map(f=>`<label class="row"><span>${f}</span>
+      <input class="mini" data-b="${f}" value="${nf(b[f])}"></label>`).join('')+
+    `<p class="hint">${nf(b.x1-b.x0)} m de bancada. As 2 Smart top são máquinas de bancada —
+     não ocupam baia no pavimento. ${b.on?'Contadas como colocadas.':'Contadas como por colocar.'}</p>`;
+  document.getElementById('bOn').onchange=e=>{ S.bench.on=e.target.checked; recalc(); };
+  document.querySelectorAll('[data-b]').forEach(i=>i.onchange=()=>{
+    const v=parseFloat(String(i.value).replace(',','.')); if(!isNaN(v)) S.bench[i.dataset.b]=r2(v); recalc();
+  });
+}
+function renderExist(){
+  const e=S.exist;
+  document.getElementById('existCtl').innerHTML=
+    `<label class="row"><span>Incluir no cálculo</span><input type="checkbox" id="eOn" ${e.incluir?'checked':''}></label>
+     <label class="row"><span>Fixas (não deslocáveis)</span><input type="checkbox" id="eFix" ${e.fixas?'checked':''}></label>
+     <label class="row"><span>Unidades</span><input class="mini" id="eN" value="${e.n}"></label>
+     <p class="hint">20 máquinas já instaladas, dimensão equivalente a uma Galaxy.
+     <b>Localização actual não confirmada.</b> Marca uma fila como «exist.» na aba Filas para as
+     posicionar; com «fixas» ligado essas filas não se arrastam.</p>`;
+  document.getElementById('eOn').onchange=ev=>{ S.exist.incluir=ev.target.checked; recalc(); };
+  document.getElementById('eFix').onchange=ev=>{ S.exist.fixas=ev.target.checked; recalc(); };
+  document.getElementById('eN').onchange=ev=>{ const v=parseInt(ev.target.value); if(v>=0) S.exist.n=v; recalc(); };
+}
+
+function renderInv(){
+  const byModel={};
+  R.bays.forEach(b=>{ if(b.modelo && !b.flags.includes('excesso')) byModel[b.modelo]=(byModel[b.modelo]||0)+1; });
+  const rows=[];
+  MODELS.forEach(mo=>{
+    const col = byModel[mo.m]||0;
+    const benchDone = mo.bancada && S.bench.on ? mo.q : 0;
+    const done = mo.bancada ? benchDone : col;
+    rows.push(`<tr data-m="${esc(mo.m)}" class="invItem" draggable="${mo.bancada?'false':'true'}">
+      <td><span class="sw" style="background:${MODEL_COLOR[mo.m]}"></span>${esc(mo.m)}${mo.bancada?' <small>(bancada)</small>':''}</td>
+      <td><small style="color:var(--ink2)">${mo.boards.map(b=>BOARD_CODE[b]).join(' ')}</small></td>
+      <td class="n">${mo.q}</td><td class="n">${done}</td>
+      <td class="n" style="${mo.q-done?'color:var(--bad);font-weight:700':''}">${mo.q-done}</td></tr>`);
+  });
+  if(S.exist.incluir){
+    const col=byModel[EXIST]||0;
+    rows.push(`<tr class="invItem" draggable="true" data-m="${EXIST}">
+      <td><span class="sw" style="background:#b9b9b9"></span>${EXIST}</td><td></td>
+      <td class="n">${S.exist.n}</td><td class="n">${col}</td>
+      <td class="n" style="${S.exist.n-col?'color:var(--bad);font-weight:700':''}">${S.exist.n-col}</td></tr>`);
+  }
+  document.getElementById('invTbl').innerHTML =
+    `<tr><th>Modelo</th><th>Placas</th><th class="n">un.</th><th class="n">col.</th><th class="n">falta</th></tr>`+rows.join('');
+  document.querySelectorAll('tr.invItem').forEach(tr=>{
+    tr.ondragstart=ev=>ev.dataTransfer.setData('text/plain',tr.dataset.m);
+    tr.onclick=()=>{
+      if(!sel) return;
+      if(sel.tipo==='solta'){
+        const u=S.soltas.find(x=>x.id===sel.id); if(!u) return;
+        if(tr.dataset.m===EXIST){ u.parque='existing'; u.m=EXIST; } else { u.parque='new'; u.m=tr.dataset.m; }
+      }else{
+        const row=S.rows.find(r=>r.id===sel.rid); if(!row) return;
+        row.a[sel.k]=tr.dataset.m;
+      }
+      recalc();
+    };
+  });
+  document.getElementById('pendTbl').innerHTML = R.pendentes.length
+    ? `<tr><th>Modelo</th><th class="n">un.</th></tr>`+
+      R.pendentes.map(p=>`<tr><td>${esc(p.m)}</td><td class="n">${p.n}</td></tr>`).join('')
+    : `<tr><td style="color:var(--ok)">Inventário todo colocado.</td></tr>`;
+}
+
+function renderObst(){
+  document.getElementById('pilarTbl').innerHTML = S.pilares.length
+    ? `<tr><th>#</th><th>tipo</th><th class="n">x</th><th class="n">y</th><th class="n">Ø / l</th><th class="n">h</th><th></th></tr>`+
+      S.pilares.map((p,i)=>`<tr data-i="${i}"><td>P${i+1}</td><td>${p.tipo==='c'?'circ.':'rect.'}</td>
+        <td class="n"><input class="mini" data-f="x" value="${nf(p.x)}"></td>
+        <td class="n"><input class="mini" data-f="y" value="${nf(p.y)}"></td>
+        <td class="n"><input class="mini" data-f="${p.tipo==='c'?'d':'w'}" value="${nf(p.tipo==='c'?p.d:p.w)}"></td>
+        <td class="n">${p.tipo==='c'?'—':`<input class="mini" data-f="h" value="${nf(p.h)}">`}</td>
+        <td><button class="sm" data-a="del">✕</button></td></tr>`).join('')
+    : `<tr><td style="color:var(--ink2)">Sem pilares definidos.</td></tr>`;
+  document.querySelectorAll('#pilarTbl tr[data-i]').forEach(tr=>{
+    const p=S.pilares[+tr.dataset.i];
+    tr.querySelectorAll('input[data-f]').forEach(i=>i.onchange=()=>{
+      const v=parseFloat(String(i.value).replace(',','.')); if(!isNaN(v)) p[i.dataset.f]=r2(v); recalc();
+    });
+    tr.querySelector('[data-a=del]').onclick=()=>{ S.pilares.splice(+tr.dataset.i,1); recalc(); };
+  });
+  document.getElementById('boxTbl').innerHTML = S.caixas.length
+    ? `<tr><th>#</th><th class="n">x</th><th class="n">y</th><th></th></tr>`+
+      S.caixas.map((c,i)=>`<tr data-i="${i}"><td>C${i+1}</td>
+        <td class="n"><input class="mini" data-f="x" value="${nf(c.x)}"></td>
+        <td class="n"><input class="mini" data-f="y" value="${nf(c.y)}"></td>
+        <td><button class="sm" data-a="del">✕</button></td></tr>`).join('')
+    : `<tr><td style="color:var(--ink2)">Sem caixas de pavimento definidas.</td></tr>`;
+  document.querySelectorAll('#boxTbl tr[data-i]').forEach(tr=>{
+    const c=S.caixas[+tr.dataset.i];
+    tr.querySelectorAll('input[data-f]').forEach(i=>i.onchange=()=>{
+      const v=parseFloat(String(i.value).replace(',','.')); if(!isNaN(v)) c[i.dataset.f]=r2(v); recalc();
+    });
+    tr.querySelector('[data-a=del]').onclick=()=>{ S.caixas.splice(+tr.dataset.i,1); recalc(); };
+  });
+}
+
+function snapshot(){ return JSON.parse(JSON.stringify({p:S.p,rows:S.rows,soltas:S.soltas,work:S.work,
+  bench:S.bench,pilares:S.pilares,caixas:S.caixas,exist:S.exist,layoutMode:S.layoutMode,notas:S.notas})); }
+
+function renderScen(){
+  const t=document.getElementById('scenTbl');
+  if(!cenarios.length){ t.innerHTML='<tr><td style="color:var(--ink2)">Sem cenários guardados.</td></tr>'; return; }
+  const linhas=[['Baias','nBays'],['Colocadas','colocadas'],['Por colocar','porColocar'],
+    ['m²/baia','m2Baia'],['Circulação %','pctCirc'],['Corredor m','aisle'],['Baia m','bay'],['Regras','regras']];
+  t.innerHTML = `<tr><th></th>${cenarios.map((c,i)=>`<th>${esc(c.nome)}<br>
+      <button class="sm" data-a="load" data-i="${i}">carregar</button>
+      <button class="sm" data-a="del" data-i="${i}">✕</button></th>`).join('')}</tr>`+
+    linhas.map(([lab,k])=>`<tr><td>${lab}</td>${cenarios.map(c=>{
+      const v=c.met[k];
+      return `<td class="n">${typeof v==='number'? nf(v, k==='nBays'||k==='colocadas'||k==='porColocar'?0:2) : esc(v)}</td>`;
+    }).join('')}</tr>`).join('');
+  t.querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i;
+    if(b.dataset.a==='del'){ cenarios.splice(i,1); renderUI(); }
+    else { Object.assign(S,JSON.parse(JSON.stringify(cenarios[i].snap))); recalc(); }
+  });
+}
+function renderLegend(){
+  const used=[...new Set(R.bays.filter(b=>b.modelo).map(b=>S.colorMode==='board'?(b.board||'—'):
+    S.colorMode==='park'?(parkOf(b)==='existing'?'Parque existente':'Parque novo'):b.modelo))];
+  const cor=k=> S.colorMode==='board' ? (BOARD_COLOR[k]||'#ddd')
+            : S.colorMode==='park' ? (k==='Parque existente'?'#b9b9b9':'#8ab4d8')
+            : (MODEL_COLOR[k]||'#ddd');
+  document.getElementById('legend').innerHTML = used.map(k=>
+    `<div><span class="sw" style="background:${cor(k)}"></span>${esc(k)}</div>`).join('');
+  const m=R.metr;
+  document.getElementById('printHead').innerHTML =
+    `<b>Implantação de máquinas de jogo — sala 7,35 × 13,90 m (81,69 m² úteis)</b> · escala 1:75 · `+
+    `baia ${nf(S.p.bayW)} × ${nf(S.p.bayD)} m · corredor ${nf(S.p.aisle)} m · `+
+    `${m.nBays} unidades${S.soltas.length?` (${S.soltas.length} solta${S.soltas.length>1?'s':''})`:''} · `+
+    `${m.colocadas} máquinas colocadas · ${m.porColocar} por colocar · `+
+    `circulação ${nf(m.pctCirc,1)} % · cotas em cadeia (medida de cada banda)`;
+  document.getElementById('printNotes').textContent = S.notas ? 'Notas: '+S.notas : '';
+}
+
+/* --------------------------- ciclo e controlos --------------------------- */
+function recalc(){ compute(); render(); renderUI(); }
+
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.dataset.p===b.dataset.t));
+});
+document.getElementById('colorMode').onchange=e=>{ S.colorMode=e.target.value; render(); renderLegend(); };
+document.getElementById('showGrid').onchange=e=>{ view.grid=e.target.checked; render(); };
+document.getElementById('showDims').onchange=e=>{ view.dims=e.target.checked; render(); };
+document.getElementById('showLabels').onchange=e=>{ view.labels=e.target.checked; render(); };
+document.getElementById('zIn').onclick=()=>{ zoom*=1.25; applyZoom(); };
+document.getElementById('zOut').onclick=()=>{ zoom/=1.25; applyZoom(); };
+document.getElementById('zFit').onclick=()=>{ zoom=null; applyZoom(); };
+document.getElementById('addRow').onclick=()=>{
+  const y=S.rows.length? r2(Math.min(ROOM_H-S.p.bayD, Math.max(...S.rows.map(r=>r.y))+S.p.bayD+S.p.aisle)) : S.p.startGap;
+  S.rows.push({id:nextId(), y, x0:4.49, n:4, facing:'S', park:'new', a:rep(null,4)});
+  S.layoutMode='manual'; recalc();
+};
+document.getElementById('fillSel').innerHTML =
+  FLOOR_MODELS.map(m=>`<option>${esc(m.m)}</option>`).join('')+'<option value="__">(vazio)</option>';
+document.getElementById('fillBtn').onclick=()=>{
+  const row=S.rows.find(r=>r.id===selRow);
+  if(!row){ alert('Seleciona primeiro uma fila (clica no nome da fila na tabela ou no plano).'); return; }
+  const v=document.getElementById('fillSel').value;
+  row.park='new';
+  row.a = v==='__' ? rep(null,row.n) : rep(v,row.n);
+  recalc();
+};
+document.getElementById('addSolta').onclick=()=>{
+  // coloca no primeiro ponto livre da espinha de circulação
+  const u=criarSolta(null, 0.80, 0.50, 'S');
+  sel={tipo:'solta', id:u.id}; recalc();
+};
+document.getElementById('delSoltas').onclick=()=>{
+  if(!S.soltas.length) return;
+  if(!confirm(`Remover ${S.soltas.length} máquina(s) solta(s)?`)) return;
+  S.soltas=[]; if(sel&&sel.tipo==='solta') sel=null; recalc();
+};
+document.getElementById('absorver').onclick=()=>{
+  S.soltas.forEach(u=>{ u.x=r2(Math.round(u.x/0.05)*0.05); u.y=r2(Math.round(u.y/0.05)*0.05); });
+  recalc();
+};
+document.getElementById('reflowBtn').onclick=()=>{ reflow(); recalc(); };
+document.getElementById('clearAll').onclick=()=>{
+  S.rows.forEach(r=>{ if(r.park!=='existing') r.a=rep(null,r.n); }); recalc();
+};
+document.getElementById('autoFill').onclick=()=>{
+  const fila=[]; FLOOR_MODELS.forEach(m=>fila.push(...rep(m.m,m.q)));
+  // as máquinas soltas já consomem inventário — não voltar a distribuí-las
+  S.soltas.forEach(u=>{
+    if(!u.m || u.parque==='existing') return;
+    const i=fila.indexOf(u.m); if(i>=0) fila.splice(i,1);
+  });
+  S.rows.slice().sort((a,b)=>a.y-b.y).forEach(r=>{
+    if(r.park==='existing'){ r.a=rep(EXIST,r.n); return; }
+    r.a=[]; for(let k=0;k<r.n;k++) r.a.push(fila.length?fila.shift():null);
+  });
+  recalc();
+};
+document.querySelectorAll('[data-aisle]').forEach(b=>b.onclick=()=>{
+  S.p.aisle=+b.dataset.aisle; if(S.layoutMode==='bands') reflow(); recalc();
+});
+document.getElementById('addPilarC').onclick=()=>{ S.pilares.push({tipo:'c',x:3.80,y:6.00,d:0.30}); recalc(); };
+document.getElementById('addPilarR').onclick=()=>{ S.pilares.push({tipo:'r',x:3.60,y:6.00,w:0.30,h:0.30}); recalc(); };
+document.getElementById('addBox').onclick=()=>{ S.caixas.push({x:4.00,y:5.00}); recalc(); };
+document.getElementById('notes').oninput=e=>{ S.notas=e.target.value; renderLegend(); };
+document.getElementById('scenSave').onclick=()=>{
+  if(cenarios.length>=3){ alert('Máximo de 3 cenários. Remove um primeiro.'); return; }
+  const nome=document.getElementById('scenName').value.trim()||('Cenário '+(cenarios.length+1));
+  const m=R.metr;
+  cenarios.push({nome, snap:snapshot(), met:{
+    nBays:m.nBays, colocadas:m.colocadas, porColocar:m.porColocar, m2Baia:m.m2Baia,
+    pctCirc:m.pctCirc, aisle:S.p.aisle, bay:S.p.bayW,
+    regras: document.querySelectorAll('#rules .dot.bad').length ? 'falha' : 'ok'
+  }});
+  document.getElementById('scenName').value=''; renderUI();
+};
+document.getElementById('doPrint').onclick=()=>window.print();
+
+/* ------------------------------ exportação ------------------------------ */
+function svgString(){
+  const svg=document.getElementById('plan').cloneNode(true);
+  svg.removeAttribute('style');
+  svg.setAttribute('xmlns','http://www.w3.org/2000/svg');
+  svg.setAttribute('width', r2(VW)+'mm'); svg.setAttribute('height', r2(VH)+'mm');
+  svg.querySelectorAll('[data-handle]').forEach(h=>h.remove());
+  return '<?xml version="1.0" encoding="UTF-8"?>\n'+new XMLSerializer().serializeToString(svg);
+}
+function baixar(nome, blob){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+document.getElementById('expSvg').onclick=()=>baixar('implantacao.svg', new Blob([svgString()],{type:'image/svg+xml'}));
+document.getElementById('expPng').onclick=()=>{
+  const s=svgString(), esc2='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);
+  const img=new Image();
+  img.onload=()=>{
+    const k=4, c=document.createElement('canvas');
+    c.width=Math.round(VW*k); c.height=Math.round(VH*k);
+    const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height);
+    g.drawImage(img,0,0,c.width,c.height);
+    c.toBlob(b=>baixar('implantacao.png',b),'image/png');
+  };
+  img.onerror=()=>alert('Não foi possível rasterizar. Usa a exportação SVG.');
+  img.src=esc2;
+};
+document.getElementById('expJson').onclick=()=>{
+  const dump={ formato:'simulador-sala/1', ...snapshot(), colorMode:S.colorMode,
+    cenarios:cenarios.map(c=>({nome:c.nome, snap:c.snap})) };
+  baixar('cenario.json', new Blob([JSON.stringify(dump,null,2)],{type:'application/json'}));
+};
+document.getElementById('impJson').onclick=()=>document.getElementById('fileIn').click();
+document.getElementById('fileIn').onchange=ev=>{
+  const f=ev.target.files[0]; if(!f) return;
+  const fr=new FileReader();
+  fr.onload=()=>{
+    try{
+      const d=JSON.parse(fr.result);
+      S.soltas=[];
+      ['p','rows','soltas','work','bench','pilares','caixas','exist','layoutMode','notas','colorMode']
+        .forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
+      if(Array.isArray(d.cenarios)) cenarios=d.cenarios.map(c=>({nome:c.nome, snap:c.snap, met:{}}));
+      S.rows.forEach(r=>{ r.a=r.a||[]; r.a.length=r.n; });
+      sel=null; selRow=null;
+      document.getElementById('colorMode').value=S.colorMode;
+      document.getElementById('notes').value=S.notas||'';
+      compute();
+      if(cenarios.length){ cenarios.forEach(c=>{ const bak=snapshot(); Object.assign(S,JSON.parse(JSON.stringify(c.snap)));
+        const r=compute(); c.met={nBays:r.metr.nBays,colocadas:r.metr.colocadas,porColocar:r.metr.porColocar,
+          m2Baia:r.metr.m2Baia,pctCirc:r.metr.pctCirc,aisle:S.p.aisle,bay:S.p.bayW,regras:'—'};
+        Object.assign(S,bak); }); }
+      recalc();
+    }catch(e){ alert('JSON inválido: '+e.message); }
+  };
+  fr.readAsText(f); ev.target.value='';
+};
+window.addEventListener('keydown',e=>{
+  if(!sel || e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA' || e.target.tagName==='SELECT') return;
+  if(e.key==='Delete'||e.key==='Backspace'){
+    if(sel.tipo==='solta'){ S.soltas=S.soltas.filter(u=>u.id!==sel.id); sel=null; }
+    else { const row=S.rows.find(r=>r.id===sel.rid); if(row) row.a[sel.k]=null; }
+    e.preventDefault(); recalc();
+  }
+  else if(e.key==='r'||e.key==='R'){
+    if(sel.tipo!=='solta') return;
+    const u=S.soltas.find(x=>x.id===sel.id); if(!u) return;
+    rodar(u); recalc();
+  }
+  else if(sel.tipo==='solta' && e.key.startsWith('Arrow')){
+    const u=S.soltas.find(x=>x.id===sel.id); if(!u) return;
+    const p=e.shiftKey?0.05:0.10;
+    const f=footprint(u), w=f.x1-f.x0, h=f.y1-f.y0;
+    if(e.key==='ArrowLeft')  u.x=Math.max(0, r2(u.x-p));
+    if(e.key==='ArrowRight') u.x=Math.min(r2(ROOM_W-w), r2(u.x+p));
+    if(e.key==='ArrowDown')  u.y=Math.max(0, r2(u.y-p));
+    if(e.key==='ArrowUp')    u.y=Math.min(r2(ROOM_H-h), r2(u.y+p));
+    e.preventDefault(); recalc();
+  }
+});
+window.addEventListener('resize',()=>{ if(zoom===null) applyZoom(); });
+
+/* --------------------------------- arranque ------------------------------ */
+document.getElementById('notes').value=S.notas;
+initPlanOnce();
+recalc();
+</script>
+</body>
+</html>
