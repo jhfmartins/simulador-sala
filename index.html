@@ -204,7 +204,8 @@
       </div>
 
       <div class="panel" data-p="inv">
-        <p class="hint">Arrasta uma linha para uma baia do plano, ou seleciona uma baia e clica no modelo.</p>
+        <p class="hint">Arrasta uma linha para uma baia do plano, ou seleciona uma baia e clica no modelo.
+        <b>cedidas</b> = unidades que saem da sala (não contam para colocar).</p>
         <table id="invTbl"></table>
         <h2>Por colocar</h2>
         <table id="pendTbl"></table>
@@ -354,6 +355,8 @@ SKUS.forEach(s=>{
   e.q += s.q; if(!e.boards.includes(s.b)) e.boards.push(s.b);
 });
 const FLOOR_MODELS = MODELS.filter(m=>!m.bancada);
+/* Unidades de um modelo que ficam na sala: inventário menos as cedidas. */
+const qtdSala = mo => Math.max(0, mo.q - ((S.cedidas||{})[mo.m]||0));
 
 const ABREV = {
   'Galaxy II':'Galaxy II','Phantom II':'Phant. II','Shadow III':'Shad. III',
@@ -389,10 +392,10 @@ function estadoInicial(){
       {id:'R3', y:3.70,  x0:1.28, n:7, facing:'S', park:'new', a:[...rep('Phantom II',7)]},
       {id:'R4', y:4.50,  x0:1.28, n:7, facing:'N', park:'new', a:[...rep('Phantom',2),...rep('Shadow III',4),'PH Xtreme']},
       {id:'R5', y:6.40,  x0:4.49, n:4, facing:'S', park:'new', a:rep('Starship II',4)},
-      {id:'R6', y:7.20,  x0:4.49, n:4, facing:'N', park:'new', a:[...rep('Auria J Curve',3),'PH Xtreme II']},
+      {id:'R6', y:7.20,  x0:4.49, n:4, facing:'N', park:'new', a:[...rep('Auria J Curve',2),'PH Xtreme II','Galaxy II']},
       {id:'R7', y:9.10,  x0:4.49, n:4, facing:'S', park:'new', a:[...rep('Auria 2 monitores',2),...rep('Auria Flat',2)]},
-      {id:'R8', y:9.90,  x0:4.49, n:4, facing:'N', park:'new', a:['Auria Flat',...rep('Auria 3 monitores',3)]},
-      {id:'R9', y:11.80, x0:4.49, n:4, facing:'S', park:'new', a:[...rep('Auria J Inverted',2),'Galaxy II',null]},
+      {id:'R8', y:9.90,  x0:4.49, n:4, facing:'N', park:'new', a:[null,...rep('Auria 3 monitores',2),null]},
+      {id:'R9', y:11.80, x0:4.49, n:2, facing:'S', park:'new', a:['Auria J Inverted',null]},
       // à mesma cota de R5, encostada ao gabinete; o vão x 3,20–4,49 fica livre para o acesso a norte
       {id:'R10', y:6.40, x0:1.07, n:3, facing:'S', park:'new', a:['PH Xtreme','Starship Duo','SDM']}
     ],
@@ -402,7 +405,8 @@ function estadoInicial(){
     /* Mobiliário fixo: bloqueia a circulação e precisa de frente livre para se abrir. */
     moveis:[
       {nome:'Armário', x0:4.02, y0:13.30, x1:7.35, y1:13.90, frente:'S'},
-      {nome:'Rack',    x0:3.20, y0:13.29, x1:3.81, y1:13.90, frente:'S'}
+      {nome:'Rack 1',  x0:6.13, y0:11.99, x1:6.74, y1:12.60, frente:'S'},
+      {nome:'Rack 2',  x0:6.74, y0:11.99, x1:7.35, y1:12.60, frente:'S'}
     ],
     /* Janelas: troço de parede (E/W ao longo de y, N/S ao longo de x) com faixa livre à frente. */
     janelas:[{parede:'E', a0:0.00, a1:6.40}],
@@ -416,14 +420,18 @@ function estadoInicial(){
        braço vertical com largura b; rot em quartos de volta (sentido horário), esp = espelhada. */
     mesas:[{nome:'Mesa em L', tipo:'L', x:1.40, y:9.45, w:1.80, h:1.80, a:0.80, b:0.60, rot:0, esp:false}],
     exist:{incluir:false, fixas:true, n:20},
+    /* Máquinas do inventário que saem da sala (cedidas a outra equipa): uma Áuria de cada configuração. */
+    cedidas:{'Auria Flat':1, 'Auria J Curve':1, 'Auria J Inverted':1, 'Auria 3 monitores':1},
     colorMode:'model',
     notas:'Pendências: carga eléctrica e térmica por confirmar com Instalações (chapas de '+
           'características). Percursos de evacuação por validar com Segurança. '+
           'Caixas de pavimento: 4 tomadas úteis por caixa (as ligadas ao gerador não contam); '+
           'acrescentar uma caixa por fila — posição das existentes por levantar. '+
           'Pilar P1 em posição provisória — medir em obra. '+
-          'Armário (parede norte, a partir do canto direito, ≈3,3–3,5 m) e rack de 0,61 m no '+
-          'vão de 0,82 m até à esquina: profundidade do armário por medir. '+
+          '4 Áurias cedidas (uma Flat, J Curve, J Inverted e 3 monitores). Os 2 racks ficam ao lado '+
+          'da R9, encostados à parede nascente; os cabos de rede que hoje saem pela parede de vidro '+
+          'têm de passar para os racks. Porta do gabinete é de correr. '+
+          'Armário (parede norte, a partir do canto direito, ≈3,3–3,5 m): profundidade por medir. '+
           'Extensão das janelas na parede nascente por confirmar. '+
           'Bancada Smart top deslocada para a parede poente (o armário ocupa o topo). '+
           'Medidas da sala tiradas a olho com o Rui — prever margem. '+
@@ -642,6 +650,7 @@ function compute(){
   /* --- alocação de unidades (modelo → placa concreta) --- */
   const pool={};
   SKUS.forEach(s=>{ if(s.bancada) return; (pool[s.m]=pool[s.m]||[]).push(...rep(s.b,s.q)); });
+  Object.keys(pool).forEach(m=>{ const c=(S.cedidas||{})[m]||0; if(c) pool[m].splice(Math.max(0,pool[m].length-c)); });
   if(S.exist.incluir) pool[EXIST]=rep('—',S.exist.n);
   const usados={};
   bays.forEach(b=>{
@@ -775,7 +784,7 @@ function compute(){
   const areaUtil = insideN*G*G;
   const nBays = bays.length;
   const colocadas = bays.filter(b=>b.modelo && !b.flags.includes('excesso')).length + benchN;
-  const totalNovas = MODELS.reduce((a,m)=>a+m.q,0);
+  const totalNovas = MODELS.reduce((a,m)=>a+qtdSala(m),0);
   const demanda = totalNovas + (S.exist.incluir ? S.exist.n : 0);
 
   R = {inside, free, reach, bays, bandas, xchain, portas, pendentes, usados, benchN,
@@ -1594,24 +1603,34 @@ function renderInv(){
   R.bays.forEach(b=>{ if(b.modelo && !b.flags.includes('excesso')) byModel[b.modelo]=(byModel[b.modelo]||0)+1; });
   const rows=[];
   MODELS.forEach(mo=>{
-    const col = byModel[mo.m]||0;
-    const benchDone = mo.bancada && S.bench.on ? mo.q : 0;
+    const col = byModel[mo.m]||0, q=qtdSala(mo), ced=(S.cedidas||{})[mo.m]||0;
+    const benchDone = mo.bancada && S.bench.on ? q : 0;
     const done = mo.bancada ? benchDone : col;
     rows.push(`<tr data-m="${esc(mo.m)}" class="invItem" draggable="${mo.bancada?'false':'true'}">
       <td><span class="sw" style="background:${MODEL_COLOR[mo.m]}"></span>${esc(mo.m)}${mo.bancada?' <small>(bancada)</small>':''}</td>
       <td><small style="color:var(--ink2)">${mo.boards.map(b=>BOARD_CODE[b]).join(' ')}</small></td>
-      <td class="n">${mo.q}</td><td class="n">${done}</td>
-      <td class="n" style="${mo.q-done?'color:var(--bad);font-weight:700':''}">${mo.q-done}</td></tr>`);
+      <td class="n">${mo.q}</td>
+      <td class="n"><input class="mini" data-ced="${esc(mo.m)}" value="${ced}" style="width:32px${ced?';font-weight:700':''}"></td>
+      <td class="n">${done}</td>
+      <td class="n" style="${q-done?'color:var(--bad);font-weight:700':''}">${q-done}</td></tr>`);
   });
   if(S.exist.incluir){
     const col=byModel[EXIST]||0;
     rows.push(`<tr class="invItem" draggable="true" data-m="${EXIST}">
       <td><span class="sw" style="background:#b9b9b9"></span>${EXIST}</td><td></td>
-      <td class="n">${S.exist.n}</td><td class="n">${col}</td>
+      <td class="n">${S.exist.n}</td><td></td><td class="n">${col}</td>
       <td class="n" style="${S.exist.n-col?'color:var(--bad);font-weight:700':''}">${S.exist.n-col}</td></tr>`);
   }
   document.getElementById('invTbl').innerHTML =
-    `<tr><th>Modelo</th><th>Placas</th><th class="n">un.</th><th class="n">col.</th><th class="n">falta</th></tr>`+rows.join('');
+    `<tr><th>Modelo</th><th>Placas</th><th class="n">un.</th><th class="n" title="saem da sala">cedidas</th><th class="n">col.</th><th class="n">falta</th></tr>`+rows.join('');
+  document.querySelectorAll('#invTbl input[data-ced]').forEach(i=>{
+    i.onclick=ev=>ev.stopPropagation();
+    i.onchange=()=>{
+      const mo=MODELS.find(x=>x.m===i.dataset.ced), v=Math.max(0,Math.min(mo.q,parseInt(i.value)||0));
+      S.cedidas={...(S.cedidas||{}), [mo.m]:v}; if(!v) delete S.cedidas[mo.m];
+      recalc();
+    };
+  });
   document.querySelectorAll('tr.invItem').forEach(tr=>{
     tr.ondragstart=ev=>ev.dataTransfer.setData('text/plain',tr.dataset.m);
     tr.onclick=()=>{
@@ -1789,7 +1808,7 @@ function proporCaixas(){
 }
 
 function snapshot(){ return JSON.parse(JSON.stringify({p:S.p,rows:S.rows,soltas:S.soltas,work:S.work,
-  bench:S.bench,gab:S.gab,mesas:S.mesas,moveis:S.moveis,janelas:S.janelas,pilares:S.pilares,caixas:S.caixas,pontos:S.pontos,exist:S.exist,layoutMode:S.layoutMode,notas:S.notas})); }
+  bench:S.bench,gab:S.gab,mesas:S.mesas,moveis:S.moveis,janelas:S.janelas,pilares:S.pilares,caixas:S.caixas,pontos:S.pontos,exist:S.exist,cedidas:S.cedidas,layoutMode:S.layoutMode,notas:S.notas})); }
 
 function renderScen(){
   const t=document.getElementById('scenTbl');
@@ -1875,7 +1894,7 @@ document.getElementById('clearAll').onclick=()=>{
   S.rows.forEach(r=>{ if(r.park!=='existing') r.a=rep(null,r.n); }); recalc();
 };
 document.getElementById('autoFill').onclick=()=>{
-  const fila=[]; FLOOR_MODELS.forEach(m=>fila.push(...rep(m.m,m.q)));
+  const fila=[]; FLOOR_MODELS.forEach(m=>fila.push(...rep(m.m,qtdSala(m))));
   // as máquinas soltas já consomem inventário — não voltar a distribuí-las
   S.soltas.forEach(u=>{
     if(!u.m || u.parque==='existing') return;
@@ -1955,7 +1974,7 @@ function dumpAtual(){
    vier no ficheiro — JSON antigos — fica com o valor da disposição inicial. */
 function aplicarDump(d){
   const base=estadoInicial();
-  ['p','rows','soltas','work','bench','gab','mesas','moveis','janelas','pilares','caixas','pontos','exist','layoutMode','notas','colorMode']
+  ['p','rows','soltas','work','bench','gab','mesas','moveis','janelas','pilares','caixas','pontos','exist','cedidas','layoutMode','notas','colorMode']
     .forEach(k=>{ S[k] = d[k]!==undefined ? JSON.parse(JSON.stringify(d[k])) : base[k]; });
   S.p={...base.p, ...S.p};
   S.rows.forEach(r=>{ r.a=r.a||[]; r.a.length=r.n; });
