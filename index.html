@@ -166,6 +166,7 @@
           <button class="sm" id="clearAll">Limpar atribuições</button>
         </div>
         <p class="hint">Arrasta uma fila no plano para a mover em Y (passo 0,05 m) — passa a disposição manual.
+        Com <b>⌥ Option</b>, arrastar uma baia leva só essa máquina para outra baia (se estiver ocupada, trocam).
         Clica numa baia para a selecionar; <b>Destacar</b> transforma-a em máquina solta, que depois se
         arrasta em X e Y e roda com <b>R</b>. Setas movem 0,10 m (0,05 m com Shift).
         Arrastar um modelo do inventário para chão livre cria logo uma máquina solta.</p>
@@ -1137,6 +1138,7 @@ function wirePlan(){
     g.addEventListener('pointerdown',ev=>{
       const row=S.rows.find(r=>r.id===g.dataset.row); if(!row) return;
       if(row.park==='existing' && S.exist.fixas) return;
+      if(ev.altKey){ arrastarMaquina(ev, svg); return; }
       selRow=row.id;
       const p0=svgPoint(ev), y0=row.y;
       const move=e2=>{
@@ -1148,6 +1150,41 @@ function wirePlan(){
       window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
     });
   });
+  /* ⌥ + arrastar uma baia: só essa máquina muda de baia; se a de destino estiver ocupada,
+     trocam. Sem recalc() durante o arrasto — o render() substituiria o fantasma e o alvo. */
+  function arrastarMaquina(ev, svg){
+    const el=ev.target.closest('[data-bay]'); if(!el) return;
+    const [rid,k]=el.dataset.bay.split(':'), row=S.rows.find(r=>r.id===rid);
+    if(!row || !row.a[+k]) return;
+    ev.preventDefault();
+    const p0=svgPoint(ev), fant=el.cloneNode(false);
+    fant.removeAttribute('data-bay');
+    fant.setAttribute('opacity','.6'); fant.setAttribute('pointer-events','none');
+    svg.appendChild(fant);
+    let alvo=null;
+    const marcar=(e,on)=>e&&e.setAttribute('stroke-width', on?'1.6':e.dataset.sw);
+    const move=e2=>{
+      const p=svgPoint(e2);
+      fant.setAttribute('transform',`translate(${r3((p.x-p0.x)*M)},${r3(-(p.y-p0.y)*M)})`);
+      // procura pela geometria: o texto do modelo por cima da baia tapava o elementFromPoint
+      const fila=S.rows.find(r=>p.y>=r.y && p.y<r.y+S.p.bayD && p.x>=r.x0 && p.x<rowEnd(r));
+      const novo=fila ? svg.querySelector(`[data-bay="${fila.id}:${Math.floor((p.x-fila.x0)/S.p.bayW)}"]`) : null;
+      if(novo===alvo) return;
+      marcar(alvo,false); alvo=novo&&novo!==el?novo:null;
+      if(alvo){ alvo.dataset.sw=alvo.dataset.sw||alvo.getAttribute('stroke-width'); marcar(alvo,true); }
+    };
+    const up=()=>{
+      window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up);
+      fant.remove();
+      if(!alvo){ render(); return; }
+      const [rid2,k2]=alvo.dataset.bay.split(':'), row2=S.rows.find(r=>r.id===rid2);
+      // o parque existente não se mistura com máquinas novas nem se mexe com «fixas» ligado
+      if(!row2 || row2.park!==row.park || (row2.park==='existing'&&S.exist.fixas)){ render(); return; }
+      [row.a[+k], row2.a[+k2]] = [row2.a[+k2]??null, row.a[+k]];
+      sel={tipo:'baia', rid:rid2, k:+k2}; selRow=rid2; recalc();
+    };
+    window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
+  }
   svg.querySelectorAll('[data-handle]').forEach(h=>{
     h.addEventListener('pointerdown',ev=>{
       ev.stopPropagation();
