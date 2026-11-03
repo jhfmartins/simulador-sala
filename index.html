@@ -245,6 +245,12 @@
           <span style="align-self:center;color:var(--ink2)">tomadas úteis/caixa</span>
           <input class="mini" id="tomadas"></div>
         <table id="boxTbl"></table>
+        <h2>Pontos de luz</h2>
+        <div class="bar"><button class="sm" id="addPonto">+ ponto de luz</button></div>
+        <table id="pontoTbl"></table>
+        <p class="hint">Pequena caixa com electricidade. Arrasta-a no plano; as suas tomadas contam
+        para a ilha (ou máquina solta) mais próxima.</p>
+        <h2>Tomadas por ilha</h2>
         <table id="pwrTbl" style="margin-top:6px"></table>
         <p class="hint">Cada caixa conta para a ilha (ou máquina solta) mais próxima. Só contam as
         tomadas brancas — as do gerador ficam de fora. Marca «exist.» as caixas já levantadas em obra;
@@ -401,6 +407,9 @@ function estadoInicial(){
     /* Janelas: troço de parede (E/W ao longo de y, N/S ao longo de x) com faixa livre à frente. */
     janelas:[{parede:'E', a0:0.00, a1:6.40}],
     pilares:[{tipo:'r', x:2.00, y:7.20, w:0.30, h:0.30, prov:true}], caixas:[],
+    /* Pontos de luz: pequenas caixas com electricidade, com t tomadas; contam para as
+       tomadas da ilha mais próxima, tal como as caixas de pavimento. */
+    pontos:[],
     /* Gabinete 3,10 × 3,75 m, encostado à parede com a porta (x = 3,20). */
     gab:{x0:0.10, y0:7.50, x1:3.20, y1:11.25},
     /* Mesas do gabinete. Em L: caixa w × h, braço horizontal com profundidade a,
@@ -735,7 +744,7 @@ function compute(){
     g.bb={x0:Math.min(...rcs.map(c=>c.x0)), x1:Math.max(...rcs.map(c=>c.x1)),
           y0:Math.min(...rcs.map(c=>c.y0)), y1:Math.max(...rcs.map(c=>c.y1))};
     g.maq=bays.filter(b=>b.modelo && (b.tipo==='baia' ? g.rows.includes(b.row) : g.soltas.includes(b.u))).length;
-    g.caixas=[];
+    g.caixas=[]; g.pontos=[];
   });
   const distRect=(x,y,r)=>Math.hypot(Math.max(r.x0-x,0,x-r.x1), Math.max(r.y0-y,0,y-r.y1));
   S.caixas.forEach((c,i)=>{
@@ -743,8 +752,13 @@ function compute(){
     grupos.forEach(g=>{ const d=distRect(c.x,c.y,g.bb); if(d<bd){ bd=d; best=g; } });
     if(best) best.caixas.push(i);
   });
+  S.pontos.forEach((pt,i)=>{
+    let best=null, bd=Infinity;
+    grupos.forEach(g=>{ const d=distRect(pt.x,pt.y,g.bb); if(d<bd){ bd=d; best=g; } });
+    if(best) best.pontos.push(i);
+  });
   grupos.forEach(g=>{
-    g.cap=g.caixas.length*P.tomadas;
+    g.cap=g.caixas.length*P.tomadas + g.pontos.reduce((a,i)=>a+(S.pontos[i].t||0),0);
     g.faltamCaixas = g.maq>g.cap ? Math.ceil((g.maq-g.cap)/P.tomadas) : 0;
   });
 
@@ -919,6 +933,15 @@ function render(){
       <line x1="${X(c.x)-2}" y1="${Y(c.y)}" x2="${X(c.x)+2}" y2="${Y(c.y)}" stroke="${cor}" stroke-width=".6"/>
       <line x1="${X(c.x)}" y1="${Y(c.y)-2}" x2="${X(c.x)}" y2="${Y(c.y)+2}" stroke="${cor}" stroke-width=".6"/></g>`);
     o.push(txt(c.x+0.28,c.y+0.16,'C'+(i+1),1.8,cor).replace('<text','<text pointer-events="none"'));
+  });
+
+  // pontos de luz: arrastam-se no plano
+  S.pontos.forEach((pt,i)=>{
+    o.push(`<g data-ponto="${i}" style="cursor:move">
+      <circle cx="${X(pt.x)}" cy="${Y(pt.y)}" r="1.9" fill="#ffd54a" stroke="#8a5a00" stroke-width=".5"/>
+      <path d="M ${X(pt.x)+0.35} ${Y(pt.y)-1.3} L ${X(pt.x)-0.7} ${Y(pt.y)+0.15} L ${X(pt.x)+0.1} ${Y(pt.y)+0.15}
+        L ${X(pt.x)-0.35} ${Y(pt.y)+1.3} L ${X(pt.x)+0.7} ${Y(pt.y)-0.15} L ${X(pt.x)-0.1} ${Y(pt.y)-0.15} Z" fill="#8a5a00"/></g>`);
+    o.push(txt(pt.x+0.30,pt.y+0.18,'L'+(i+1),1.8,'#8a5a00').replace('<text','<text pointer-events="none"'));
   });
 
   // portas
@@ -1132,6 +1155,22 @@ function wirePlan(){
     });
   });
   // mesas do gabinete: arrastam-se presas aos limites do gabinete
+  svg.querySelectorAll('[data-ponto]').forEach(g=>{
+    g.addEventListener('pointerdown',ev=>{
+      ev.stopPropagation();
+      const pt=S.pontos[+g.dataset.ponto], p0=svgPoint(ev), o={x:pt.x, y:pt.y};
+      const snap=v=>r2(Math.round(v/0.05)*0.05);
+      const move=e2=>{
+        const p=svgPoint(e2);
+        pt.x=Math.max(0, Math.min(ROOM_W, snap(o.x+p.x-p0.x)));
+        pt.y=Math.max(0, Math.min(ROOM_H, snap(o.y+p.y-p0.y)));
+        recalc();
+      };
+      const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+      window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
+    });
+    g.addEventListener('click',ev=>ev.stopPropagation());
+  });
   svg.querySelectorAll('[data-mesa]').forEach(g=>{
     g.addEventListener('pointerdown',ev=>{
       ev.stopPropagation();
@@ -1280,7 +1319,7 @@ function renderRules(){
   add(gf.length?'warn':'', `9 · Tomadas (${P.tomadas} úteis por caixa)`,
     gf.length ? `Faltam ${totF} caixa(s): `+gf.map(g=>`${g.nome} ${g.maq} máq. / ${g.cap} tomadas → +${g.faltamCaixas}`).join(' · ')+
       '. Ver aba Obstáculos → Propor caixas.'
-    : `Todas as ilhas com tomadas suficientes (${S.caixas.length} caixa(s)).`);
+    : `Todas as ilhas com tomadas suficientes (${S.caixas.length} caixa(s), ${S.pontos.length} ponto(s) de luz).`);
 
   const gA=(S.gab.x1-S.gab.x0)*(S.gab.y1-S.gab.y0);
   const mm=S.mesas.filter((ms,i)=>R.mesas[i].fora||R.mesas[i].sobre);
@@ -1629,10 +1668,29 @@ function renderObst(){
   });
   document.getElementById('tomadas').value=S.p.tomadas;
   document.getElementById('pwrTbl').innerHTML =
-    `<tr><th>Ilha</th><th class="n">máq.</th><th class="n">caixas</th><th class="n">tomadas</th><th class="n">faltam</th></tr>`+
+    `<tr><th>Ilha</th><th class="n">máq.</th><th class="n">caixas</th><th class="n">p. luz</th><th class="n">tomadas</th><th class="n">faltam</th></tr>`+
     R.grupos.map(g=>`<tr><td>${esc(g.nome)}</td><td class="n">${g.maq}</td><td class="n">${g.caixas.length}</td>
+      <td class="n">${g.pontos.length}</td>
       <td class="n">${g.cap}</td><td class="n" style="${g.faltamCaixas?'color:var(--bad);font-weight:700':''}">${
       g.faltamCaixas?'+'+g.faltamCaixas:'—'}</td></tr>`).join('');
+
+  document.getElementById('pontoTbl').innerHTML = S.pontos.length
+    ? `<tr><th>#</th><th class="n">x</th><th class="n">y</th><th class="n">tomadas</th><th>serve</th><th></th></tr>`+
+      S.pontos.map((pt,i)=>`<tr data-i="${i}"><td>L${i+1}</td>
+        <td class="n"><input class="mini" data-f="x" value="${nf(pt.x)}"></td>
+        <td class="n"><input class="mini" data-f="y" value="${nf(pt.y)}"></td>
+        <td class="n"><input class="mini" data-f="t" value="${pt.t}"></td>
+        <td>${esc((R.grupos.find(g=>g.pontos.includes(i))||{nome:'—'}).nome)}</td>
+        <td><button class="sm" data-a="del">✕</button></td></tr>`).join('')
+    : `<tr><td style="color:var(--ink2)">Sem pontos de luz.</td></tr>`;
+  document.querySelectorAll('#pontoTbl tr[data-i]').forEach(tr=>{
+    const pt=S.pontos[+tr.dataset.i];
+    tr.querySelectorAll('input[data-f]').forEach(i=>i.onchange=()=>{
+      const v=parseFloat(String(i.value).replace(',','.')); if(isNaN(v)) return recalc();
+      pt[i.dataset.f] = i.dataset.f==='t' ? Math.max(0,Math.round(v)) : r2(v); recalc();
+    });
+    tr.querySelector('[data-a=del]').onclick=()=>{ S.pontos.splice(+tr.dataset.i,1); recalc(); };
+  });
 
   const gb=S.gab;
   document.getElementById('gabCtl').innerHTML=
@@ -1731,7 +1789,7 @@ function proporCaixas(){
 }
 
 function snapshot(){ return JSON.parse(JSON.stringify({p:S.p,rows:S.rows,soltas:S.soltas,work:S.work,
-  bench:S.bench,gab:S.gab,mesas:S.mesas,moveis:S.moveis,janelas:S.janelas,pilares:S.pilares,caixas:S.caixas,exist:S.exist,layoutMode:S.layoutMode,notas:S.notas})); }
+  bench:S.bench,gab:S.gab,mesas:S.mesas,moveis:S.moveis,janelas:S.janelas,pilares:S.pilares,caixas:S.caixas,pontos:S.pontos,exist:S.exist,layoutMode:S.layoutMode,notas:S.notas})); }
 
 function renderScen(){
   const t=document.getElementById('scenTbl');
@@ -1836,6 +1894,7 @@ document.getElementById('addPilarC').onclick=()=>{ S.pilares.push({tipo:'c',x:3.
 document.getElementById('addPilarR').onclick=()=>{ S.pilares.push({tipo:'r',x:3.60,y:6.00,w:0.30,h:0.30}); recalc(); };
 document.getElementById('addBox').onclick=()=>{ S.caixas.push({x:4.00,y:5.00}); recalc(); };
 document.getElementById('propBox').onclick=proporCaixas;
+document.getElementById('addPonto').onclick=()=>{ S.pontos.push({x:3.80, y:6.00, t:4}); recalc(); };
 document.getElementById('addMesaL').onclick=()=>{
   S.mesas.push({nome:'Mesa '+(S.mesas.length+1), tipo:'L', x:S.gab.x0, y:S.gab.y0, w:1.80, h:1.80, a:0.80, b:0.60, rot:0, esp:false}); recalc(); };
 document.getElementById('addMesaR').onclick=()=>{
@@ -1896,7 +1955,7 @@ function dumpAtual(){
    vier no ficheiro — JSON antigos — fica com o valor da disposição inicial. */
 function aplicarDump(d){
   const base=estadoInicial();
-  ['p','rows','soltas','work','bench','gab','mesas','moveis','janelas','pilares','caixas','exist','layoutMode','notas','colorMode']
+  ['p','rows','soltas','work','bench','gab','mesas','moveis','janelas','pilares','caixas','pontos','exist','layoutMode','notas','colorMode']
     .forEach(k=>{ S[k] = d[k]!==undefined ? JSON.parse(JSON.stringify(d[k])) : base[k]; });
   S.p={...base.p, ...S.p};
   S.rows.forEach(r=>{ r.a=r.a||[]; r.a.length=r.n; });
