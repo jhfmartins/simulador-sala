@@ -101,6 +101,8 @@
 <header>
   <h1>Simulador de implantação — sala 7,35 × 13,90 m</h1>
   <span id="modeChip" class="chip">bandas</span>
+  <span id="saveChip" class="chip">—</span>
+  <span id="saveMsg" style="color:var(--ink2);font-size:11.5px"></span>
   <div id="metrics"></div>
 </header>
 
@@ -124,6 +126,8 @@
       <span style="margin-left:auto"></span>
       <button class="sm" id="expSvg">SVG</button>
       <button class="sm" id="expPng">PNG</button>
+      <button class="sm pri" id="lsSave" title="Grava no browser; o site passa a abrir nesta configuração">Guardar</button>
+      <button class="sm" id="copyLink" title="Copia um link que abre esta configuração noutro browser">Copiar link</button>
       <button class="sm" id="expJson">JSON ↓</button>
       <button class="sm" id="impJson">JSON ↑</button>
       <button class="sm" id="doPrint">Imprimir 1:75</button>
@@ -252,9 +256,20 @@
           <input type="text" id="scenName" placeholder="nome do cenário" style="flex:1">
           <button class="sm pri" id="scenSave">Guardar</button>
         </div>
-        <p class="hint">Até 3 cenários em memória. Para guardar em disco usa <b>JSON ↓</b> — não há
-        dependência de armazenamento do browser.</p>
+        <p class="hint">Até 3 cenários para comparar lado a lado. Ficam gravados com a configuração
+        quando carregas em <b>Guardar</b>.</p>
         <table id="scenTbl"></table>
+        <h2>Versões guardadas neste browser</h2>
+        <div class="bar">
+          <input type="text" id="verName" placeholder="nome da versão" style="flex:1">
+          <button class="sm" id="verSave">Guardar versão</button>
+        </div>
+        <table id="verTbl"></table>
+        <div class="bar" style="margin-top:12px"><button class="sm" id="resetBtn">Repor inicial</button></div>
+        <p class="hint"><b>Guardar</b> (barra do plano) grava a configuração actual e o site passa a abrir
+        sempre nela, neste browser. As versões com nome são cópias para voltar atrás. Outro browser ou
+        outra pessoa não vê estas gravações: para partilhar usa <b>Copiar link</b> ou <b>JSON ↓</b>.
+        <b>Repor inicial</b> volta à disposição de origem — só fica a abrir nela se depois carregares em Guardar.</p>
       </div>
 
       <div class="panel" data-p="notes">
@@ -1200,7 +1215,7 @@ function renderUI(){
 
   renderRules(); renderBands(); renderRows(); renderSliders();
   renderWork(); renderBench(); renderExist(); renderInv();
-  renderObst(); renderScen(); renderLegend();
+  renderObst(); renderScen(); renderLegend(); estadoGravacao();
 }
 
 function renderRules(){
@@ -1761,7 +1776,7 @@ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.dataset.p===b.dataset.t));
 });
-document.getElementById('colorMode').onchange=e=>{ S.colorMode=e.target.value; render(); renderLegend(); };
+document.getElementById('colorMode').onchange=e=>{ S.colorMode=e.target.value; render(); renderLegend(); estadoGravacao(); };
 document.getElementById('showGrid').onchange=e=>{ view.grid=e.target.checked; render(); };
 document.getElementById('showDims').onchange=e=>{ view.dims=e.target.checked; render(); };
 document.getElementById('showLabels').onchange=e=>{ view.labels=e.target.checked; render(); };
@@ -1832,7 +1847,7 @@ document.getElementById('janFolga').onchange=e=>{
 document.getElementById('addMovel').onclick=()=>{
   S.moveis.push({nome:'Móvel '+(S.moveis.length+1), x0:3.40, y0:11.00, x1:4.00, y1:12.00, frente:'E'}); recalc(); };
 document.getElementById('addJanela').onclick=()=>{ S.janelas.push({parede:'E', a0:0.00, a1:1.00}); recalc(); };
-document.getElementById('notes').oninput=e=>{ S.notas=e.target.value; renderLegend(); };
+document.getElementById('notes').oninput=e=>{ S.notas=e.target.value; renderLegend(); estadoGravacao(); };
 document.getElementById('scenSave').onclick=()=>{
   if(cenarios.length>=3){ alert('Máximo de 3 cenários. Remove um primeiro.'); return; }
   const nome=document.getElementById('scenName').value.trim()||('Cenário '+(cenarios.length+1));
@@ -1873,40 +1888,112 @@ document.getElementById('expPng').onclick=()=>{
   img.onerror=()=>alert('Não foi possível rasterizar. Usa a exportação SVG.');
   img.src=esc2;
 };
-document.getElementById('expJson').onclick=()=>{
-  const dump={ formato:'simulador-sala/1', ...snapshot(), colorMode:S.colorMode,
+function dumpAtual(){
+  return { formato:'simulador-sala/1', ...snapshot(), colorMode:S.colorMode,
     cenarios:cenarios.map(c=>({nome:c.nome, snap:c.snap})) };
-  baixar('cenario.json', new Blob([JSON.stringify(dump,null,2)],{type:'application/json'}));
+}
+/* Aplica uma configuração exportada (JSON, gravação do browser ou link). O que não
+   vier no ficheiro — JSON antigos — fica com o valor da disposição inicial. */
+function aplicarDump(d){
+  const base=estadoInicial();
+  ['p','rows','soltas','work','bench','gab','mesas','moveis','janelas','pilares','caixas','exist','layoutMode','notas','colorMode']
+    .forEach(k=>{ S[k] = d[k]!==undefined ? JSON.parse(JSON.stringify(d[k])) : base[k]; });
+  S.p={...base.p, ...S.p};
+  S.rows.forEach(r=>{ r.a=r.a||[]; r.a.length=r.n; });
+  cenarios = Array.isArray(d.cenarios) ? d.cenarios.map(c=>({nome:c.nome, snap:c.snap, met:{}})) : [];
+  sel=null; selRow=null;
+  document.getElementById('colorMode').value=S.colorMode;
+  document.getElementById('notes').value=S.notas||'';
+  compute();
+  cenarios.forEach(c=>{ const bak=snapshot(); Object.assign(S,JSON.parse(JSON.stringify(c.snap)));
+    const r=compute(); c.met={nBays:r.metr.nBays,colocadas:r.metr.colocadas,porColocar:r.metr.porColocar,
+      m2Baia:r.metr.m2Baia,pctCirc:r.metr.pctCirc,aisle:S.p.aisle,bay:S.p.bayW,regras:'—'};
+    Object.assign(S,bak); });
+  recalc();
+}
+document.getElementById('expJson').onclick=()=>{
+  baixar('cenario.json', new Blob([JSON.stringify(dumpAtual(),null,2)],{type:'application/json'}));
 };
 document.getElementById('impJson').onclick=()=>document.getElementById('fileIn').click();
 document.getElementById('fileIn').onchange=ev=>{
   const f=ev.target.files[0]; if(!f) return;
   const fr=new FileReader();
   fr.onload=()=>{
-    try{
-      const d=JSON.parse(fr.result);
-      const base=estadoInicial();
-      S.soltas=[]; S.moveis=[]; S.janelas=[];
-      ['p','rows','soltas','work','bench','gab','mesas','moveis','janelas','pilares','caixas','exist','layoutMode','notas','colorMode']
-        .forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
-      if(Array.isArray(d.cenarios)) cenarios=d.cenarios.map(c=>({nome:c.nome, snap:c.snap, met:{}}));
-      S.p={...base.p, ...S.p};
-      if(!d.gab) S.gab=base.gab;
-      if(!d.mesas) S.mesas=base.mesas;   // JSON antigos não trazem os parâmetros novos
-      S.rows.forEach(r=>{ r.a=r.a||[]; r.a.length=r.n; });
-      sel=null; selRow=null;
-      document.getElementById('colorMode').value=S.colorMode;
-      document.getElementById('notes').value=S.notas||'';
-      compute();
-      if(cenarios.length){ cenarios.forEach(c=>{ const bak=snapshot(); Object.assign(S,JSON.parse(JSON.stringify(c.snap)));
-        const r=compute(); c.met={nBays:r.metr.nBays,colocadas:r.metr.colocadas,porColocar:r.metr.porColocar,
-          m2Baia:r.metr.m2Baia,pctCirc:r.metr.pctCirc,aisle:S.p.aisle,bay:S.p.bayW,regras:'—'};
-        Object.assign(S,bak); }); }
-      recalc();
-    }catch(e){ alert('JSON inválido: '+e.message); }
+    try{ aplicarDump(JSON.parse(fr.result)); }
+    catch(e){ alert('JSON inválido: '+e.message); }
   };
   fr.readAsText(f); ev.target.value='';
 };
+/* ----------------------- gravação no browser e link ----------------------- */
+/* Tudo o que toca no localStorage está protegido: em janela privada ou com dados
+   bloqueados o acesso pode falhar, e o simulador continua a funcionar sem gravar. */
+const LS_KEY='simuladorSala.v1';
+function lerStore(){ try{ return JSON.parse(localStorage.getItem(LS_KEY))||{}; }catch(e){ return {}; } }
+function gravarStore(st){ try{ localStorage.setItem(LS_KEY, JSON.stringify(st)); return true; }catch(e){ return false; } }
+let msgTimer=null;
+function aviso(t){
+  const el=document.getElementById('saveMsg'); el.textContent=t;
+  clearTimeout(msgTimer); msgTimer=setTimeout(()=>el.textContent='',6000);
+}
+function estadoGravacao(){
+  const st=lerStore(), chip=document.getElementById('saveChip');
+  if(!st.atual){ chip.textContent='não guardado'; chip.className='chip'; return; }
+  const igual = JSON.stringify(st.atual)===JSON.stringify(dumpAtual());
+  chip.textContent = igual ? 'guardado' : 'alterações por guardar';
+  chip.className = 'chip '+(igual?'ok':'warn');
+}
+function renderVersoes(){
+  const v=lerStore().versoes||[];
+  const t=document.getElementById('verTbl');
+  t.innerHTML = v.length
+    ? `<tr><th>versão</th><th>data</th><th></th></tr>`+v.map((x,i)=>`<tr><td>${esc(x.nome)}</td>
+        <td><small style="color:var(--ink2)">${esc(new Date(x.data).toLocaleString('pt-PT',{dateStyle:'short',timeStyle:'short'}))}</small></td>
+        <td style="white-space:nowrap"><button class="sm" data-a="load" data-i="${i}">abrir</button>
+        <button class="sm" data-a="del" data-i="${i}">✕</button></td></tr>`).join('')
+    : `<tr><td style="color:var(--ink2)">Sem versões guardadas.</td></tr>`;
+  t.querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>{
+    const st=lerStore(), i=+b.dataset.i, x=(st.versoes||[])[i]; if(!x) return;
+    if(b.dataset.a==='load'){ aplicarDump(x.dump); aviso(`Versão «${x.nome}» aberta — Guardar para o site abrir nela.`); }
+    else if(confirm(`Apagar a versão «${x.nome}»?`)){ st.versoes.splice(i,1); gravarStore(st); renderVersoes(); }
+  });
+}
+document.getElementById('lsSave').onclick=()=>{
+  const st=lerStore(); st.atual=dumpAtual(); st.data=new Date().toISOString();
+  if(gravarStore(st)) aviso('Guardado — o site passa a abrir nesta configuração neste browser.');
+  else alert('Este browser não permite gravar (janela privada ou dados bloqueados). Usa JSON ↓.');
+  estadoGravacao();
+};
+document.getElementById('verSave').onclick=()=>{
+  const st=lerStore(); st.versoes=st.versoes||[];
+  const nome=document.getElementById('verName').value.trim()||('Versão '+(st.versoes.length+1));
+  st.versoes.unshift({nome, data:new Date().toISOString(), dump:dumpAtual()});
+  if(!gravarStore(st)){ alert('Este browser não permite gravar. Usa JSON ↓.'); return; }
+  document.getElementById('verName').value=''; renderVersoes(); aviso(`Versão «${nome}» guardada.`);
+};
+document.getElementById('resetBtn').onclick=()=>{
+  if(!confirm('Repor a disposição inicial? As alterações por guardar perdem-se.')) return;
+  aplicarDump({}); aviso('Disposição inicial reposta — o site continua a abrir na gravação até carregares em Guardar.');
+};
+/* Link: configuração (sem cenários) em JSON, comprimida e em base64url no #c= */
+async function codificar(obj){
+  const cs=new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+  const buf=new Uint8Array(await new Response(cs).arrayBuffer());
+  let b=''; buf.forEach(x=>b+=String.fromCharCode(x));
+  return btoa(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function descodificar(t){
+  const b=atob(t.replace(/-/g,'+').replace(/_/g,'/'));
+  const bytes=Uint8Array.from(b,c=>c.charCodeAt(0));
+  const ds=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return JSON.parse(await new Response(ds).text());
+}
+document.getElementById('copyLink').onclick=async()=>{
+  const {cenarios:_, ...d}=dumpAtual();
+  const url=location.origin+location.pathname+'#c='+await codificar(d);
+  try{ await navigator.clipboard.writeText(url); aviso('Link copiado — quem o abrir vê esta configuração.'); }
+  catch(e){ prompt('Copia o link:', url); }
+};
+
 window.addEventListener('keydown',e=>{
   if(!sel || e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA' || e.target.tagName==='SELECT') return;
   if(sel.tipo==='mesa'){
@@ -1941,6 +2028,20 @@ window.addEventListener('resize',()=>{ if(zoom===null) applyZoom(); });
 document.getElementById('notes').value=S.notas;
 initPlanOnce();
 recalc();
+renderVersoes();
+(async()=>{
+  const h=location.hash.match(/^#c=(.+)$/);
+  if(h){
+    try{
+      aplicarDump(await descodificar(h[1]));
+      history.replaceState(null,'',location.pathname+location.search);
+      aviso('Configuração aberta a partir de um link — Guardar para o site abrir nela.');
+      return;
+    }catch(e){ alert('Link inválido ou incompleto — a abrir a configuração guardada.'); }
+  }
+  const st=lerStore();
+  if(st.atual){ aplicarDump(st.atual); aviso('Aberta a configuração guardada.'); }
+})();
 </script>
 </body>
 </html>
