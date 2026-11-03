@@ -422,15 +422,17 @@ function estadoInicial(){
        braço vertical com largura b; rot em quartos de volta (sentido horário), esp = espelhada. */
     mesas:[{nome:'Mesa em L', tipo:'L', x:1.45, y:9.45, w:1.80, h:1.80, a:0.80, b:0.60, rot:0, esp:false}],
     exist:{incluir:false, fixas:true, n:20},
-    /* Máquinas do inventário que saem da sala (cedidas a outra equipa): uma Áuria de cada configuração. */
-    cedidas:{'Auria Flat':1, 'Auria J Curve':1, 'Auria J Inverted':1, 'Auria 3 monitores':1},
+    /* Máquinas do inventário que saem da sala. As 4 Áurias que tinham sido cedidas voltaram e
+       ficam por colocar até se escolher onde vão. */
+    cedidas:{},
     colorMode:'model',
     notas:'Pendências: carga eléctrica e térmica por confirmar com Instalações (chapas de '+
           'características). Percursos de evacuação por validar com Segurança. '+
           'Caixas de pavimento: 4 tomadas úteis por caixa (as ligadas ao gerador não contam); '+
           'acrescentar uma caixa por fila — posição das existentes por levantar. '+
           'Pilar P1 em posição provisória — medir em obra. '+
-          '4 Áurias cedidas (uma Flat, J Curve, J Inverted e 3 monitores). Os 2 racks ficam ao lado '+
+          'As 4 Áurias que tinham sido cedidas (uma Flat, J Curve, J Inverted e 3 monitores) voltam à sala: '+
+          'por colocar, falta decidir onde. Os 2 racks ficam ao lado '+
           'da R9, encostados à parede nascente; os cabos de rede que hoje saem pela parede de vidro '+
           'têm de passar para os racks. Porta do gabinete é de correr. '+
           'Armário (parede norte, a partir do canto direito, ≈3,3–3,5 m): profundidade por medir. '+
