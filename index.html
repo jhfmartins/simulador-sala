@@ -213,11 +213,30 @@
           <button class="sm" id="addPilarR">+ pilar rectangular</button>
         </div>
         <table id="pilarTbl"></table>
+        <p class="hint">As baias não podem sobrepor pilares.</p>
+        <h2>Mobiliário fixo</h2>
+        <div class="bar"><button class="sm" id="addMovel">+ móvel</button></div>
+        <table id="movTbl"></table>
+        <p class="hint">No plano: arrasta pelo interior para mover e pelo quadrado azul (canto
+        inferior direito) para redimensionar. «Frente» é o lado das portas — precisa de ≥ 0,60 m livres.</p>
+        <h2>Janelas</h2>
+        <div class="bar"><button class="sm" id="addJanela">+ janela</button>
+          <span style="align-self:center;color:var(--ink2)">faixa livre</span>
+          <input class="mini" id="janFolga"> <span style="align-self:center;color:var(--ink2)">m</span></div>
+        <table id="janTbl"></table>
+        <p class="hint">Troço de parede com janela: de a₀ a a₁ ao longo da parede (y nas paredes
+        nascente/poente, x nas paredes norte/sul). Nenhuma máquina ou móvel pode ocupar a faixa.</p>
         <h2>Caixas de pavimento</h2>
-        <div class="bar"><button class="sm" id="addBox">+ caixa</button></div>
+        <div class="bar"><button class="sm" id="addBox">+ caixa</button>
+          <button class="sm" id="propBox">Propor caixas</button>
+          <button class="sm" id="delPropBox">Remover propostas</button>
+          <span style="align-self:center;color:var(--ink2)">tomadas úteis/caixa</span>
+          <input class="mini" id="tomadas"></div>
         <table id="boxTbl"></table>
-        <p class="hint">Lista vazia por omissão — posições por confirmar em obra.
-        As baias não podem sobrepor pilares.</p>
+        <table id="pwrTbl" style="margin-top:6px"></table>
+        <p class="hint">Cada caixa conta para a ilha (ou máquina solta) mais próxima. Só contam as
+        tomadas brancas — as do gerador ficam de fora. Marca «exist.» as caixas já levantadas em obra;
+        <b>Propor caixas</b> acrescenta as que faltam (a verde) por baixo de cada ilha.</p>
       </div>
 
       <div class="panel" data-p="scen">
@@ -331,29 +350,48 @@ const rep = (m,n)=>Array(n).fill(m);
 
 function estadoInicial(){
   return {
-    p:{ bayW:0.71, bayD:0.80, aisle:1.10, backGap:0.00, startGap:1.00, aisleMin:1.10 },
+    p:{ bayW:0.71, bayD:0.80, aisle:1.10, backGap:0.00, startGap:1.00, aisleMin:1.10,
+        janelaFolga:1.10, tomadas:4 },
     layoutMode:'bands',
+    /* R1/R2 passam de 8+8 para 6+6 e afastam-se 1,10 m da janela nascente; R3/R4 crescem
+       para poente, para a zona libertada pela antiga área de trabalho. */
     rows:[
-      {id:'R1', y:1.00,  x0:1.65, n:8, facing:'S', park:'new', a:rep('Galaxy II',8)},
-      {id:'R2', y:1.80,  x0:1.65, n:8, facing:'N', park:'new', a:[...rep('Galaxy II',5),...rep('Phantom II',3)]},
-      {id:'R3', y:3.70,  x0:4.49, n:4, facing:'S', park:'new', a:[...rep('Phantom',2),...rep('Shadow III',2)]},
-      {id:'R4', y:4.50,  x0:4.49, n:4, facing:'N', park:'new', a:[...rep('Shadow III',2),...rep('PH Xtreme',2)]},
+      {id:'R1', y:1.00,  x0:1.99, n:6, facing:'S', park:'new', a:rep('Galaxy II',6)},
+      {id:'R2', y:1.80,  x0:1.99, n:6, facing:'N', park:'new', a:[...rep('Galaxy II',6)]},
+      {id:'R3', y:3.70,  x0:1.28, n:7, facing:'S', park:'new', a:[...rep('Phantom II',7)]},
+      {id:'R4', y:4.50,  x0:1.28, n:7, facing:'N', park:'new', a:[...rep('Phantom',2),...rep('Shadow III',4),'PH Xtreme']},
       {id:'R5', y:6.40,  x0:4.49, n:4, facing:'S', park:'new', a:rep('Starship II',4)},
-      {id:'R6', y:7.20,  x0:4.49, n:4, facing:'N', park:'new', a:['Starship Duo','SDM','PH Xtreme II','Auria J Curve']},
-      {id:'R7', y:9.10,  x0:4.49, n:4, facing:'S', park:'new', a:[...rep('Auria J Curve',2),...rep('Auria 2 monitores',2)]},
-      {id:'R8', y:9.90,  x0:4.49, n:4, facing:'N', park:'new', a:[...rep('Auria Flat',3),'Auria 3 monitores']},
-      {id:'R9', y:11.80, x0:4.49, n:4, facing:'S', park:'new', a:[...rep('Auria 3 monitores',2),...rep('Auria J Inverted',2)]}
+      {id:'R6', y:7.20,  x0:4.49, n:4, facing:'N', park:'new', a:[...rep('Auria J Curve',3),'PH Xtreme II']},
+      {id:'R7', y:9.10,  x0:4.49, n:4, facing:'S', park:'new', a:[...rep('Auria 2 monitores',2),...rep('Auria Flat',2)]},
+      {id:'R8', y:9.90,  x0:4.49, n:4, facing:'N', park:'new', a:['Auria Flat',...rep('Auria 3 monitores',3)]},
+      {id:'R9', y:11.80, x0:4.49, n:4, facing:'S', park:'new', a:[...rep('Auria J Inverted',2),'Galaxy II',null]},
+      // à mesma cota de R5, encostada ao gabinete; o vão x 3,20–4,49 fica livre para o acesso a norte
+      {id:'R10', y:6.40, x0:1.07, n:3, facing:'S', park:'new', a:['PH Xtreme','Starship Duo','SDM']}
     ],
     soltas:[],
-    work:{on:true,  x0:0.00, y0:4.50, x1:3.20, y1:7.50},
-    bench:{on:true, x0:4.49, y0:13.15, x1:7.33, y1:13.80},
-    pilares:[], caixas:[],
+    work:{on:false, x0:0.00, y0:4.50, x1:3.20, y1:7.50},
+    bench:{on:true, x0:0.00, y0:1.20, x1:0.65, y1:3.20, frente:'E'},
+    /* Mobiliário fixo: bloqueia a circulação e precisa de frente livre para se abrir. */
+    moveis:[
+      {nome:'Armário', x0:4.02, y0:13.30, x1:7.35, y1:13.90, frente:'S'},
+      {nome:'Rack',    x0:3.20, y0:13.29, x1:3.81, y1:13.90, frente:'S'}
+    ],
+    /* Janelas: troço de parede (E/W ao longo de y, N/S ao longo de x) com faixa livre à frente. */
+    janelas:[{parede:'E', a0:0.00, a1:6.40}],
+    pilares:[{tipo:'r', x:2.00, y:7.20, w:0.30, h:0.30, prov:true}], caixas:[],
     exist:{incluir:false, fixas:true, n:20},
     colorMode:'model',
     notas:'Pendências: carga eléctrica e térmica por confirmar com Instalações (chapas de '+
-          'características). Percursos de evacuação por validar com Segurança. Posição dos '+
-          'pilares e caixas de pavimento por levantar em obra. Localização das 20 máquinas do '+
-          'parque existente não confirmada.'
+          'características). Percursos de evacuação por validar com Segurança. '+
+          'Caixas de pavimento: 4 tomadas úteis por caixa (as ligadas ao gerador não contam); '+
+          'acrescentar uma caixa por fila — posição das existentes por levantar. '+
+          'Pilar P1 em posição provisória — medir em obra. '+
+          'Armário (parede norte, a partir do canto direito, ≈3,3–3,5 m) e rack de 0,61 m no '+
+          'vão de 0,82 m até à esquina: profundidade do armário por medir. '+
+          'Extensão das janelas na parede nascente por confirmar. '+
+          'Bancada Smart top deslocada para a parede poente (o armário ocupa o topo). '+
+          'Medidas da sala tiradas a olho com o Rui — prever margem. '+
+          'Localização das 20 máquinas do parque existente não confirmada.'
   };
 }
 let S = estadoInicial();
@@ -417,6 +455,14 @@ function criarSolta(m, px, py, facing){
   S.soltas.push(u);
   return u;
 }
+/* Faixa de profundidade f em frente de um troço de janela, do lado de dentro da sala. */
+function faixaJanela(jn, f){
+  const a0=Math.min(jn.a0,jn.a1), a1=Math.max(jn.a0,jn.a1);
+  if(jn.parede==='E') return {x0:r3(ROOM_W-f), x1:ROOM_W, y0:a0, y1:a1};
+  if(jn.parede==='W') return {x0:0, x1:f, y0:a0, y1:a1};
+  if(jn.parede==='N') return {x0:a0, x1:a1, y0:r3(ROOM_H-f), y1:ROOM_H};
+  return {x0:a0, x1:a1, y0:0, y1:f};
+}
 const rowLen = r=> r3(r.n*S.p.bayW);
 const rowEnd = r=> r3(r.x0+rowLen(r));
 
@@ -432,12 +478,18 @@ function cells(a,b,max){
 /* ------------------------------- cálculo -------------------------------- */
 function reflow(){
   const rows = S.rows.slice().sort((a,b)=>a.y-b.y);
+  // filas à mesma cota (ex.: R5 e R10) formam um só nível e movem-se juntas
+  const niveis=[];
+  rows.forEach(r=>{
+    const nv=niveis[niveis.length-1];
+    if(nv && Math.abs(nv[0].y-r.y)<0.005) nv.push(r); else niveis.push([r]);
+  });
   let y = S.p.startGap;
-  rows.forEach((r,i)=>{
-    r.y = r3(y);
+  niveis.forEach((nv,i)=>{
+    nv.forEach(r=>r.y=r3(y));
     y += S.p.bayD;
-    const nx = rows[i+1];
-    if(nx) y += (r.facing==='S' && nx.facing==='N') ? S.p.backGap : S.p.aisle;
+    const nx = niveis[i+1];
+    if(nx) y += (nv[0].facing==='S' && nx[0].facing==='N') ? S.p.backGap : S.p.aisle;
   });
   S.rows = rows;
   S.layoutMode = 'bands';
@@ -479,6 +531,7 @@ function compute(){
   });
   if(S.work.on)  blockRect(S.work);
   if(S.bench.on) blockRect(S.bench);
+  S.moveis.forEach(blockRect);
 
   /* --- inundação a partir da porta exterior --- */
   const reach = new Uint8Array(GW*GH);
@@ -569,6 +622,11 @@ function compute(){
   /* --- cadeia de bandas em Y --- */
   const edges=new Set([0,ROOM_H]);
   S.rows.forEach(r=>{ edges.add(r3(r.y)); edges.add(r3(r.y+P.bayD)); });
+  /* Móveis que fazem frente às filas (mais de 1 m de sobreposição em X) entram na
+     cadeia — um armário a toda a largura encurta a última banda de manobra. */
+  const movCota = S.moveis.filter(mv=>S.rows.some(r=>
+    Math.min(mv.x1,rowEnd(r))-Math.max(mv.x0,r.x0) > 1.0));
+  movCota.forEach(mv=>{ edges.add(r3(mv.y0)); edges.add(r3(mv.y1)); });
   const ys=[...edges].sort((a,b)=>a-b);
   const bandas=[];
   for(let i=0;i<ys.length-1;i++){
@@ -576,6 +634,8 @@ function compute(){
     if(med<0.005) continue;
     const row=S.rows.find(r=>Math.abs(r.y-a)<0.005 && Math.abs(r.y+P.bayD-b)<0.005);
     if(row){ bandas.push({t:'fila', nome:row.id, med, row}); continue; }
+    const mv=movCota.find(m=>Math.abs(m.y0-a)<0.005 && Math.abs(m.y1-b)<0.005);
+    if(mv){ bandas.push({t:'movel', nome:mv.nome, med, y0:a, y1:b}); continue; }
     const prev=S.rows.filter(r=>Math.abs(r.y+P.bayD-a)<0.005);
     const next=S.rows.filter(r=>Math.abs(r.y-b)<0.005);
     let nome='Manobra', tipo='manobra';
@@ -583,8 +643,10 @@ function compute(){
     const frente = prev.some(r=>r.facing==='N') || next.some(r=>r.facing==='S');
     if(costas && !frente){ nome='Costas com costas'; tipo='costas'; }
     else if(frente){ nome='Corredor'; tipo='corredor'; }
+    const mvN=movCota.find(m=>Math.abs(m.y0-b)<0.005);
     if(a<0.005) nome='Entrada / manobra';
-    else if(Math.abs(b-ROOM_H)<0.005) nome='Manobra / bancada';
+    else if(mvN){ nome='Manobra / '+mvN.nome.toLowerCase(); tipo='manobra'; }
+    else if(Math.abs(b-ROOM_H)<0.005) nome='Manobra / topo';
     bandas.push({t:tipo, nome, med, y0:a, y1:b});
   }
 
@@ -601,9 +663,10 @@ function compute(){
   /* --- portas desimpedidas --- */
   const portas = DOORS.map(d=>{
     let livre=true;
-    for(const b of bays) if(overlap(b.rc,d.clear)) livre=false;
+    for(const b of bays) if(b.modelo && overlap(b.rc,d.clear)) livre=false;
     if(S.work.on && overlap(S.work,d.clear)) livre=false;
     if(S.bench.on && overlap(S.bench,d.clear)) livre=false;
+    for(const mv of S.moveis) if(overlap(mv,d.clear)) livre=false;
     for(const p of S.pilares){
       const pr = p.tipo==='c' ? {x0:p.x-p.d/2,x1:p.x+p.d/2,y0:p.y-p.d/2,y1:p.y+p.d/2}
                               : {x0:p.x,x1:p.x+p.w,y0:p.y,y1:p.y+p.h};
@@ -611,6 +674,51 @@ function compute(){
     }
     const ai=Math.floor(d.alvo[0]/G), aj=Math.floor(d.alvo[1]/G);
     return {...d, livre, alcancavel: reach[aj*GW+ai]===1};
+  });
+
+  /* --- janelas: faixa livre em frente de cada troço --- */
+  const janelas = S.janelas.map(jn=>{
+    const f=P.janelaFolga, rc = faixaJanela(jn, f);
+    const obst=[];
+    bays.forEach(b=>{ if(b.modelo && overlap(b.rc,rc)) obst.push(nomeUnid(b)); });
+    S.moveis.forEach(mv=>{ if(overlap(mv,rc)) obst.push(mv.nome); });
+    if(S.bench.on && overlap(S.bench,rc)) obst.push('bancada');
+    if(S.work.on && overlap(S.work,rc)) obst.push('área de trabalho');
+    return {...jn, rc, obst};
+  });
+
+  /* --- acesso a móveis e bancada: frente livre e ligada à circulação --- */
+  const acessos = [...S.moveis, ...(S.bench.on?[{...S.bench, nome:'Bancada Smart top'}]:[])]
+    .filter(mv=>mv.frente).map(mv=>({nome:mv.nome, ...clearAt(mv, mv.frente)}));
+
+  /* --- tomadas: cada caixa serve o grupo (ilha ou máquina solta) mais próximo --- */
+  const grupos=[];
+  const ilhaDe=new Map();
+  S.rows.slice().sort((a,b)=>a.y-b.y).forEach(r=>{
+    const par = S.rows.find(o=>o!==r && ilhaDe.has(o) &&
+      Math.abs(o.y+P.bayD+P.backGap-r.y)<0.005 &&
+      Math.min(rowEnd(o),rowEnd(r))-Math.max(o.x0,r.x0) > 0.005);
+    if(par){ const g=ilhaDe.get(par); g.rows.push(r); ilhaDe.set(r,g); }
+    else { const g={nome:'', rows:[r], soltas:[]}; grupos.push(g); ilhaDe.set(r,g); }
+  });
+  S.soltas.forEach(u=>grupos.push({nome:u.id, rows:[], soltas:[u]}));
+  grupos.forEach(g=>{
+    if(g.rows.length) g.nome=g.rows.map(r=>r.id).join('/');
+    const rcs=[...g.rows.flatMap(r=>[bayRect(r,0),bayRect(r,r.n-1)]), ...g.soltas.map(footprint)];
+    g.bb={x0:Math.min(...rcs.map(c=>c.x0)), x1:Math.max(...rcs.map(c=>c.x1)),
+          y0:Math.min(...rcs.map(c=>c.y0)), y1:Math.max(...rcs.map(c=>c.y1))};
+    g.maq=bays.filter(b=>b.modelo && (b.tipo==='baia' ? g.rows.includes(b.row) : g.soltas.includes(b.u))).length;
+    g.caixas=[];
+  });
+  const distRect=(x,y,r)=>Math.hypot(Math.max(r.x0-x,0,x-r.x1), Math.max(r.y0-y,0,y-r.y1));
+  S.caixas.forEach((c,i)=>{
+    let best=null, bd=Infinity;
+    grupos.forEach(g=>{ const d=distRect(c.x,c.y,g.bb); if(d<bd){ bd=d; best=g; } });
+    if(best) best.caixas.push(i);
+  });
+  grupos.forEach(g=>{
+    g.cap=g.caixas.length*P.tomadas;
+    g.faltamCaixas = g.maq>g.cap ? Math.ceil((g.maq-g.cap)/P.tomadas) : 0;
   });
 
   /* --- métricas --- */
@@ -621,6 +729,7 @@ function compute(){
   const demanda = totalNovas + (S.exist.incluir ? S.exist.n : 0);
 
   R = {inside, free, reach, bays, bandas, xchain, portas, pendentes, usados, benchN,
+       janelas, acessos, grupos,
        metr:{areaUtil, nBays, colocadas, demanda,
              porColocar: pendentes.reduce((a,p)=>a+p.n,0),
              m2Baia: nBays? areaUtil/nBays : 0,
@@ -684,7 +793,7 @@ function render(){
   // gabinete
   o.push(rect(OFFICE,'#fafafa','#15181c',.6,'2.5 1.5'));
   o.push(txt((OFFICE.x0+OFFICE.x1)/2,(OFFICE.y0+OFFICE.y1)/2+0.18,'Gabinete',2.6,'#4a5158'));
-  o.push(txt((OFFICE.x0+OFFICE.x1)/2,(OFFICE.y0+OFFICE.y1)/2-0.20,'9,60 m² · não utilizável',2.0,'#7a8188'));
+  o.push(txt((OFFICE.x0+OFFICE.x1)/2,(OFFICE.y0+OFFICE.y1)/2-0.20,'9,60 m² · postos de trabalho',2.0,'#7a8188'));
 
   // área de trabalho
   if(S.work.on){
@@ -702,19 +811,40 @@ function render(){
   if(S.bench.on){
     const b=S.bench;
     o.push(rect(b,'#efeae0','#8a5a00',.6,'2 1.5','data-move="bench" style="cursor:move"'));
-    o.push(txt((b.x0+b.x1)/2,(b.y0+b.y1)/2,`Bancada Smart top · ${nf(b.x1-b.x0)} m`,2.0,'#8a5a00'));
+    const vert=(b.y1-b.y0)>(b.x1-b.x0), cx=(b.x0+b.x1)/2, cy=(b.y0+b.y1)/2;
+    const lab=`Bancada Smart top · ${nf(Math.max(b.x1-b.x0,b.y1-b.y0))} m`;
+    o.push(vert
+      ? `<text transform="translate(${X(cx)+0.7},${Y(cy)}) rotate(-90)" text-anchor="middle" font-size="2" fill="#8a5a00">${esc(lab)}</text>`
+      : txt(cx,cy,lab,2.0,'#8a5a00'));
     o.push(handle(b.x1,b.y1,'bench'));
   }
+  // mobiliário fixo (armário, rack…) — arrasta-se pelo interior, redimensiona-se pelo canto
+  S.moveis.forEach((mv,i)=>{
+    o.push(rect(mv,'#e4ddd3','#5b4a36',.6,null,`data-move="mov:${i}" style="cursor:move"`));
+    const vert=(mv.y1-mv.y0)>(mv.x1-mv.x0), cx=(mv.x0+mv.x1)/2, cy=(mv.y0+mv.y1)/2;
+    const lab = Math.max(mv.x1-mv.x0,mv.y1-mv.y0)>1.2
+      ? `${mv.nome} · ${nf(mv.x1-mv.x0)} × ${nf(mv.y1-mv.y0)}` : mv.nome;
+    o.push(vert
+      ? `<text transform="translate(${X(cx)+0.7},${Y(cy)}) rotate(-90)" text-anchor="middle" font-size="1.9" fill="#5b4a36" pointer-events="none">${esc(lab)}</text>`
+      : txt(cx,cy,lab,1.9,'#5b4a36').replace('<text','<text pointer-events="none"'));
+    o.push(handle(mv.x1,mv.y0,'mov:'+i));
+  });
+  // janelas e respectiva faixa de acesso
+  R.janelas.forEach(jn=>{
+    const f=jn.rc, a0=Math.min(jn.a0,jn.a1), a1=Math.max(jn.a0,jn.a1);
+    o.push(rect(f, jn.obst.length?'rgba(160,27,27,.06)':'rgba(29,78,121,.05)',
+      jn.obst.length?'#a01b1b':'#7fa6c9', .35, '1.5 1.2'));
+    const [x1,y1,x2,y2] = jn.parede==='E' ? [ROOM_W,a0,ROOM_W,a1] : jn.parede==='W' ? [0,a0,0,a1]
+                        : jn.parede==='N' ? [a0,ROOM_H,a1,ROOM_H] : [a0,0,a1,0];
+    o.push(`<line x1="${X(x1)}" y1="${Y(y1)}" x2="${X(x2)}" y2="${Y(y2)}" stroke="#3a86c8" stroke-width="1.8"/>`);
+    o.push(`<line x1="${X(x1)}" y1="${Y(y1)}" x2="${X(x2)}" y2="${Y(y2)}" stroke="#fff" stroke-width=".5"/>`);
+  });
   // pilares e caixas
   S.pilares.forEach((p,i)=>{
     if(p.tipo==='c') o.push(`<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="${p.d/2*M}" fill="#d9d9d9" stroke="#15181c" stroke-width=".7"/>`);
     else o.push(rect({x0:p.x,y0:p.y,x1:p.x+p.w,y1:p.y+p.h},'#d9d9d9','#15181c',.7));
     o.push(txt(p.tipo==='c'?p.x:p.x+p.w/2, (p.tipo==='c'?p.y:p.y+p.h/2)-0.02, 'P'+(i+1),2,'#15181c'));
-  });
-  S.caixas.forEach((c,i)=>{
-    o.push(`<g><line x1="${X(c.x)-2}" y1="${Y(c.y)}" x2="${X(c.x)+2}" y2="${Y(c.y)}" stroke="#a01b1b" stroke-width=".6"/>
-      <line x1="${X(c.x)}" y1="${Y(c.y)-2}" x2="${X(c.x)}" y2="${Y(c.y)+2}" stroke="#a01b1b" stroke-width=".6"/></g>`);
-    o.push(txt(c.x+0.28,c.y+0.16,'C'+(i+1),1.8,'#a01b1b'));
+    if(p.prov) o.push(txt(p.tipo==='c'?p.x:p.x+p.w/2, (p.tipo==='c'?p.y-p.d/2:p.y)-0.16, 'provisório',1.5,'#8a5a00'));
   });
 
   // baias, por fila
@@ -733,6 +863,15 @@ function render(){
   // máquinas soltas
   R.bays.filter(b=>b.tipo==='solta').forEach(b=>{
     o.push(`<g data-solta="${b.u.id}" style="cursor:${fixa(b)?'not-allowed':'move'}">${drawUnid(b)}</g>`);
+  });
+
+  // caixas: vermelho = existente, verde = a acrescentar
+  S.caixas.forEach((c,i)=>{
+    const cor = c.nova ? '#1c6b3a' : '#a01b1b';
+    o.push(`<g pointer-events="none"><rect x="${X(c.x)-1.3}" y="${Y(c.y)-1.3}" width="2.6" height="2.6" fill="#fff" stroke="${cor}" stroke-width=".45"/>
+      <line x1="${X(c.x)-2}" y1="${Y(c.y)}" x2="${X(c.x)+2}" y2="${Y(c.y)}" stroke="${cor}" stroke-width=".6"/>
+      <line x1="${X(c.x)}" y1="${Y(c.y)-2}" x2="${X(c.x)}" y2="${Y(c.y)+2}" stroke="${cor}" stroke-width=".6"/></g>`);
+    o.push(txt(c.x+0.28,c.y+0.16,'C'+(i+1),1.8,cor).replace('<text','<text pointer-events="none"'));
   });
 
   // portas
@@ -912,11 +1051,14 @@ function wirePlan(){
   svg.querySelectorAll('[data-handle]').forEach(h=>{
     h.addEventListener('pointerdown',ev=>{
       ev.stopPropagation();
-      const t = h.dataset.handle==='work' ? S.work : S.bench;
+      const t = alvoArea(h.dataset.handle);
+      const mov = h.dataset.handle.startsWith('mov:');
       const move=e2=>{
         const p=svgPoint(e2);
-        t.x1=Math.max(t.x0+0.4, Math.min(ROOM_W, r2(Math.round(p.x/0.05)*0.05)));
-        t.y1=Math.max(t.y0+0.4, Math.min(ROOM_H, r2(Math.round(p.y/0.05)*0.05)));
+        t.x1=Math.max(t.x0+0.2, Math.min(ROOM_W, r2(Math.round(p.x/0.05)*0.05)));
+        // os móveis encostam ao topo: o canto de redimensionar é o inferior direito
+        if(mov) t.y0=Math.min(t.y1-0.2, Math.max(0, r2(Math.round(p.y/0.05)*0.05)));
+        else t.y1=Math.max(t.y0+0.4, Math.min(ROOM_H, r2(Math.round(p.y/0.05)*0.05)));
         recalc();
       };
       const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
@@ -927,7 +1069,7 @@ function wirePlan(){
   svg.querySelectorAll('[data-move]').forEach(el=>{
     el.addEventListener('pointerdown',ev=>{
       ev.stopPropagation();
-      const t = el.dataset.move==='work' ? S.work : S.bench;
+      const t = alvoArea(el.dataset.move);
       const p0=svgPoint(ev), o={x0:t.x0,y0:t.y0,x1:t.x1,y1:t.y1};
       const snap=v=>r2(Math.round(v/0.05)*0.05);
       const move=e2=>{
@@ -942,6 +1084,11 @@ function wirePlan(){
       window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
     });
   });
+}
+function alvoArea(k){
+  if(k==='work') return S.work;
+  if(k==='bench') return S.bench;
+  return S.moveis[+k.split(':')[1]];
 }
 /* Ouvintes do próprio <svg>: registados uma única vez. render() substitui os
    filhos mas não o elemento, pelo que registá-los em wirePlan() acumulava um
@@ -1001,13 +1148,11 @@ function renderRules(){
     `${sob.length} unidade(s) a ocupar o mesmo espaço: `+lista(sob));
 
   const p0=R.portas[0], p1=R.portas[1];
-  const conNorte = m.maxYreach >= 13.40;
   const conGab = p1.alcancavel;
-  add((!m.portaLivre||!conGab||!conNorte)?'bad':'', '3 · Circulação contínua',
+  add((!m.portaLivre||!conGab)?'bad':'', '3 · Circulação contínua',
     !m.portaLivre ? 'Porta exterior obstruída — sem ponto de partida.' :
     `Porta do gabinete: ${conGab?'alcançável':'INALCANÇÁVEL'}. `+
-    `Extremo norte: ${conNorte?'alcançável':'INALCANÇÁVEL'} (alcance máximo y = ${nf(m.maxYreach)} m). `+
-    `Bolsas isoladas: ${nf(m.bolsas)} m².`);
+    `Alcance máximo y = ${nf(m.maxYreach)} m. Bolsas isoladas: ${nf(m.bolsas)} m².`);
 
   const curtos=R.bandas.filter(b=>(b.t==='corredor'||b.t==='manobra') && b.med<P.aisleMin);
   add(curtos.length?'bad':'', `4 · Largura mínima de corredor (${nf(P.aisleMin)} m)`,
@@ -1026,6 +1171,25 @@ function renderRules(){
     `${m.colocadas} de ${m.demanda} máquinas colocadas`+
     (R.benchN?` (inclui ${R.benchN} de bancada)`:'')+
     `. Por colocar: `+(R.pendentes.length? R.pendentes.map(p=>`${p.m} ×${p.n}`).join(', '):'nenhuma')+'.');
+
+  const jb=R.janelas.filter(j=>j.obst.length);
+  const PAR={E:'nascente',W:'poente',N:'norte',S:'sul'};
+  add(jb.length?'bad':'', `7 · Acesso às janelas (${nf(P.janelaFolga)} m)`,
+    !R.janelas.length ? 'Sem janelas definidas.' :
+    jb.length ? jb.map(j=>`Parede ${PAR[j.parede]} ${nf(Math.min(j.a0,j.a1))}–${nf(Math.max(j.a0,j.a1))}: `+
+      j.obst.join(', ')).join(' · ')
+    : `Faixa de ${nf(P.janelaFolga)} m livre em frente de ${R.janelas.length} troço(s) de janela.`);
+
+  const semAc=R.acessos.filter(a=>a.d<0.60 || !a.alcancavel);
+  add(semAc.length?'bad':'', '8 · Acesso ao mobiliário (≥ 0,60 m)',
+    R.acessos.map(a=>`${a.nome} ${nf(a.d)} m${a.alcancavel?'':' (isolado)'}`).join(' · ')||'Sem mobiliário.');
+
+  const gf=R.grupos.filter(g=>g.faltamCaixas);
+  const totF=gf.reduce((a,g)=>a+g.faltamCaixas,0);
+  add(gf.length?'warn':'', `9 · Tomadas (${P.tomadas} úteis por caixa)`,
+    gf.length ? `Faltam ${totF} caixa(s): `+gf.map(g=>`${g.nome} ${g.maq} máq. / ${g.cap} tomadas → +${g.faltamCaixas}`).join(' · ')+
+      '. Ver aba Obstáculos → Propor caixas.'
+    : `Todas as ilhas com tomadas suficientes (${S.caixas.length} caixa(s)).`);
 
   if(P.bayD < 0.732) add('bad','Profundidade de baia insuficiente',
     `${nf(P.bayD)} m < 0,732 m — o cabinete mais fundo do catálogo (700×732 mm) não cabe.`);
@@ -1061,6 +1225,14 @@ function renderBands(){
 
 function renderSliders(){
   const P=S.p;
+  /* Recriar os <input type=range> a cada recálculo interrompia o arrasto ao fim de
+     um passo: depois da primeira vez só se actualizam valores. */
+  const ex=document.querySelectorAll('#sliders input[type=range]');
+  if(ex.length){
+    ex.forEach(inp=>{ const k=inp.dataset.p; if(+inp.value!==P[k]) inp.value=P[k];
+      document.querySelector(`#sliders [data-v=${k}]`).textContent=nf(P[k]); });
+    return;
+  }
   const defs=[
     ['aisle','Largura de corredor',0.80,2.00,0.05],
     ['bayD','Profundidade de baia',0.60,1.00,0.01],
@@ -1273,7 +1445,8 @@ function renderExist(){
      <label class="row"><span>Unidades</span><input class="mini" id="eN" value="${e.n}"></label>
      <p class="hint">20 máquinas já instaladas, dimensão equivalente a uma Galaxy.
      <b>Localização actual não confirmada.</b> Marca uma fila como «exist.» na aba Filas para as
-     posicionar; com «fixas» ligado essas filas não se arrastam.</p>`;
+     posicionar; com «fixas» ligado essas filas não se arrastam.
+     Para mover <b>uma</b> máquina nova: aba Filas → clica na baia → <b>Destacar</b>.</p>`;
   document.getElementById('eOn').onchange=ev=>{ S.exist.incluir=ev.target.checked; recalc(); };
   document.getElementById('eFix').onchange=ev=>{ S.exist.fixas=ev.target.checked; recalc(); };
   document.getElementById('eN').onchange=ev=>{ const v=parseInt(ev.target.value); if(v>=0) S.exist.n=v; recalc(); };
@@ -1340,23 +1513,98 @@ function renderObst(){
     tr.querySelector('[data-a=del]').onclick=()=>{ S.pilares.splice(+tr.dataset.i,1); recalc(); };
   });
   document.getElementById('boxTbl').innerHTML = S.caixas.length
-    ? `<tr><th>#</th><th class="n">x</th><th class="n">y</th><th></th></tr>`+
+    ? `<tr><th>#</th><th class="n">x</th><th class="n">y</th><th>estado</th><th>serve</th><th></th></tr>`+
       S.caixas.map((c,i)=>`<tr data-i="${i}"><td>C${i+1}</td>
         <td class="n"><input class="mini" data-f="x" value="${nf(c.x)}"></td>
         <td class="n"><input class="mini" data-f="y" value="${nf(c.y)}"></td>
+        <td><button class="sm" data-a="nova">${c.nova?'nova':'exist.'}</button></td>
+        <td>${esc((R.grupos.find(g=>g.caixas.includes(i))||{nome:'—'}).nome)}</td>
         <td><button class="sm" data-a="del">✕</button></td></tr>`).join('')
-    : `<tr><td style="color:var(--ink2)">Sem caixas de pavimento definidas.</td></tr>`;
+    : `<tr><td style="color:var(--ink2)">Sem caixas de pavimento definidas — posições por levantar em obra.</td></tr>`;
   document.querySelectorAll('#boxTbl tr[data-i]').forEach(tr=>{
     const c=S.caixas[+tr.dataset.i];
     tr.querySelectorAll('input[data-f]').forEach(i=>i.onchange=()=>{
       const v=parseFloat(String(i.value).replace(',','.')); if(!isNaN(v)) c[i.dataset.f]=r2(v); recalc();
     });
+    tr.querySelector('[data-a=nova]').onclick=()=>{ c.nova=!c.nova; recalc(); };
     tr.querySelector('[data-a=del]').onclick=()=>{ S.caixas.splice(+tr.dataset.i,1); recalc(); };
   });
+  document.getElementById('tomadas').value=S.p.tomadas;
+  document.getElementById('pwrTbl').innerHTML =
+    `<tr><th>Ilha</th><th class="n">máq.</th><th class="n">caixas</th><th class="n">tomadas</th><th class="n">faltam</th></tr>`+
+    R.grupos.map(g=>`<tr><td>${esc(g.nome)}</td><td class="n">${g.maq}</td><td class="n">${g.caixas.length}</td>
+      <td class="n">${g.cap}</td><td class="n" style="${g.faltamCaixas?'color:var(--bad);font-weight:700':''}">${
+      g.faltamCaixas?'+'+g.faltamCaixas:'—'}</td></tr>`).join('');
+
+  const FR={S:'sul',N:'norte',E:'nasc.',W:'poente','':'—'};
+  document.getElementById('movTbl').innerHTML = S.moveis.length
+    ? `<tr><th>nome</th><th class="n">x₀</th><th class="n">y₀</th><th class="n">x₁</th><th class="n">y₁</th><th>frente</th><th></th></tr>`+
+      S.moveis.map((mv,i)=>`<tr data-i="${i}">
+        <td><input data-f="nome" value="${esc(mv.nome)}" style="width:70px"></td>
+        ${['x0','y0','x1','y1'].map(f=>`<td class="n"><input class="mini" data-f="${f}" value="${nf(mv[f])}"></td>`).join('')}
+        <td><button class="sm" data-a="fr">${FR[mv.frente||'']}</button></td>
+        <td><button class="sm" data-a="del">✕</button></td></tr>`).join('')
+    : `<tr><td style="color:var(--ink2)">Sem mobiliário.</td></tr>`;
+  document.querySelectorAll('#movTbl tr[data-i]').forEach(tr=>{
+    const mv=S.moveis[+tr.dataset.i];
+    tr.querySelectorAll('input[data-f]').forEach(i=>i.onchange=()=>{
+      if(i.dataset.f==='nome'){ mv.nome=i.value.trim()||mv.nome; return recalc(); }
+      const v=parseFloat(String(i.value).replace(',','.')); if(!isNaN(v)) mv[i.dataset.f]=r2(v);
+      if(mv.x1<mv.x0) [mv.x0,mv.x1]=[mv.x1,mv.x0];
+      if(mv.y1<mv.y0) [mv.y0,mv.y1]=[mv.y1,mv.y0];
+      recalc();
+    });
+    tr.querySelector('[data-a=fr]').onclick=()=>{
+      const ORD=['S','W','N','E','']; mv.frente=ORD[(ORD.indexOf(mv.frente||'')+1)%ORD.length]; recalc();
+    };
+    tr.querySelector('[data-a=del]').onclick=()=>{ S.moveis.splice(+tr.dataset.i,1); recalc(); };
+  });
+
+  const PAR={E:'nascente',W:'poente',N:'norte',S:'sul'};
+  document.getElementById('janFolga').value=nf(S.p.janelaFolga);
+  document.getElementById('janTbl').innerHTML = S.janelas.length
+    ? `<tr><th>parede</th><th class="n">a₀</th><th class="n">a₁</th><th></th><th></th></tr>`+
+      S.janelas.map((j,i)=>`<tr data-i="${i}">
+        <td><button class="sm" data-a="par">${PAR[j.parede]}</button></td>
+        <td class="n"><input class="mini" data-f="a0" value="${nf(j.a0)}"></td>
+        <td class="n"><input class="mini" data-f="a1" value="${nf(j.a1)}"></td>
+        <td>${R.janelas[i].obst.length?'<span class="chip bad">obstruída</span>':'<span class="chip ok">livre</span>'}</td>
+        <td><button class="sm" data-a="del">✕</button></td></tr>`).join('')
+    : `<tr><td style="color:var(--ink2)">Sem janelas definidas.</td></tr>`;
+  document.querySelectorAll('#janTbl tr[data-i]').forEach(tr=>{
+    const j=S.janelas[+tr.dataset.i];
+    tr.querySelectorAll('input[data-f]').forEach(i=>i.onchange=()=>{
+      const v=parseFloat(String(i.value).replace(',','.')); if(!isNaN(v)) j[i.dataset.f]=r2(v); recalc();
+    });
+    tr.querySelector('[data-a=par]').onclick=()=>{
+      const ORD=['E','N','W','S']; j.parede=ORD[(ORD.indexOf(j.parede)+1)%4]; recalc();
+    };
+    tr.querySelector('[data-a=del]').onclick=()=>{ S.janelas.splice(+tr.dataset.i,1); recalc(); };
+  });
+}
+/* Acrescenta, por baixo de cada ilha com défice, as caixas que faltam: na junção
+   costas-com-costas (ou nas costas de uma fila isolada), espaçadas ao longo da ilha. */
+function proporCaixas(){
+  R.grupos.forEach(g=>{
+    if(!g.faltamCaixas) return;
+    let y, x0=g.bb.x0, x1=g.bb.x1;
+    if(g.rows.length>1){
+      const a=g.rows[0]; y=r2(a.y+S.p.bayD+S.p.backGap/2);
+      x0=Math.max(...g.rows.map(r=>r.x0)); x1=Math.min(...g.rows.map(rowEnd));
+    }else if(g.rows.length){
+      const r=g.rows[0]; y=r.facing==='S'? r2(r.y+S.p.bayD-0.10) : r2(r.y+0.10);
+    }else{ y=r2((g.bb.y0+g.bb.y1)/2); }
+    const n=g.faltamCaixas, tot=n+g.caixas.length;
+    for(let k=0;k<n;k++){
+      const x=r2(x0+(x1-x0)*(g.caixas.length+k+0.5)/tot);
+      S.caixas.push({x, y, nova:true});
+    }
+  });
+  recalc();
 }
 
 function snapshot(){ return JSON.parse(JSON.stringify({p:S.p,rows:S.rows,soltas:S.soltas,work:S.work,
-  bench:S.bench,pilares:S.pilares,caixas:S.caixas,exist:S.exist,layoutMode:S.layoutMode,notas:S.notas})); }
+  bench:S.bench,moveis:S.moveis,janelas:S.janelas,pilares:S.pilares,caixas:S.caixas,exist:S.exist,layoutMode:S.layoutMode,notas:S.notas})); }
 
 function renderScen(){
   const t=document.getElementById('scenTbl');
@@ -1386,7 +1634,7 @@ function renderLegend(){
     `<div><span class="sw" style="background:${cor(k)}"></span>${esc(k)}</div>`).join('');
   const m=R.metr;
   document.getElementById('printHead').innerHTML =
-    `<b>Implantação de máquinas de jogo — sala 7,35 × 13,90 m (81,69 m² úteis)</b> · escala 1:75 · `+
+    `<b>Implantação de máquinas de jogo — sala 7,35 × 13,90 m (${nf(m.areaUtil)} m² úteis)</b> · escala 1:75 · `+
     `baia ${nf(S.p.bayW)} × ${nf(S.p.bayD)} m · corredor ${nf(S.p.aisle)} m · `+
     `${m.nBays} unidades${S.soltas.length?` (${S.soltas.length} solta${S.soltas.length>1?'s':''})`:''} · `+
     `${m.colocadas} máquinas colocadas · ${m.porColocar} por colocar · `+
@@ -1460,6 +1708,14 @@ document.querySelectorAll('[data-aisle]').forEach(b=>b.onclick=()=>{
 document.getElementById('addPilarC').onclick=()=>{ S.pilares.push({tipo:'c',x:3.80,y:6.00,d:0.30}); recalc(); };
 document.getElementById('addPilarR').onclick=()=>{ S.pilares.push({tipo:'r',x:3.60,y:6.00,w:0.30,h:0.30}); recalc(); };
 document.getElementById('addBox').onclick=()=>{ S.caixas.push({x:4.00,y:5.00}); recalc(); };
+document.getElementById('propBox').onclick=proporCaixas;
+document.getElementById('delPropBox').onclick=()=>{ S.caixas=S.caixas.filter(c=>!c.nova); recalc(); };
+document.getElementById('tomadas').onchange=e=>{ const v=parseInt(e.target.value); if(v>0) S.p.tomadas=v; recalc(); };
+document.getElementById('janFolga').onchange=e=>{
+  const v=parseFloat(String(e.target.value).replace(',','.')); if(v>=0) S.p.janelaFolga=r2(v); recalc(); };
+document.getElementById('addMovel').onclick=()=>{
+  S.moveis.push({nome:'Móvel '+(S.moveis.length+1), x0:3.40, y0:11.00, x1:4.00, y1:12.00, frente:'E'}); recalc(); };
+document.getElementById('addJanela').onclick=()=>{ S.janelas.push({parede:'E', a0:0.00, a1:1.00}); recalc(); };
 document.getElementById('notes').oninput=e=>{ S.notas=e.target.value; renderLegend(); };
 document.getElementById('scenSave').onclick=()=>{
   if(cenarios.length>=3){ alert('Máximo de 3 cenários. Remove um primeiro.'); return; }
@@ -1513,10 +1769,12 @@ document.getElementById('fileIn').onchange=ev=>{
   fr.onload=()=>{
     try{
       const d=JSON.parse(fr.result);
-      S.soltas=[];
-      ['p','rows','soltas','work','bench','pilares','caixas','exist','layoutMode','notas','colorMode']
+      const base=estadoInicial();
+      S.soltas=[]; S.moveis=[]; S.janelas=[];
+      ['p','rows','soltas','work','bench','moveis','janelas','pilares','caixas','exist','layoutMode','notas','colorMode']
         .forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
       if(Array.isArray(d.cenarios)) cenarios=d.cenarios.map(c=>({nome:c.nome, snap:c.snap, met:{}}));
+      S.p={...base.p, ...S.p};   // JSON antigos não trazem os parâmetros novos
       S.rows.forEach(r=>{ r.a=r.a||[]; r.a.length=r.n; });
       sel=null; selRow=null;
       document.getElementById('colorMode').value=S.colorMode;
