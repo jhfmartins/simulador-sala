@@ -127,6 +127,7 @@
       <button class="sm" id="expSvg">SVG</button>
       <button class="sm" id="expPng">PNG</button>
       <button class="sm pri" id="lsSave" title="Grava no browser; o site passa a abrir nesta configuração">Guardar</button>
+      <button class="sm" id="publish" title="Grava no repositório: passa a ser a configuração que todos veem ao abrir o site">Publicar</button>
       <button class="sm" id="copyLink" title="Copia um link que abre esta configuração noutro browser">Copiar link</button>
       <button class="sm" id="expJson">JSON ↓</button>
       <button class="sm" id="impJson">JSON ↑</button>
@@ -2077,7 +2078,7 @@ function renderVersoes(){
   });
 }
 document.getElementById('lsSave').onclick=()=>{
-  const st=lerStore(); st.atual=dumpAtual(); st.data=new Date().toISOString();
+  const st=lerStore(); st.atual=dumpAtual(); st.data=new Date().toISOString(); st.base=pubAtual;
   if(gravarStore(st)) aviso('Guardado — o site passa a abrir nesta configuração neste browser.');
   else alert('Este browser não permite gravar (janela privada ou dados bloqueados). Usa JSON ↓.');
   estadoGravacao();
@@ -2111,6 +2112,59 @@ document.getElementById('copyLink').onclick=async()=>{
   const url=location.origin+location.pathname+'#c='+await codificar(d);
   try{ await navigator.clipboard.writeText(url); aviso('Link copiado — quem o abrir vê esta configuração.'); }
   catch(e){ prompt('Copia o link:', url); }
+};
+
+/* ------------------- configuração publicada (partilhada) ------------------- */
+/* O GitHub Pages não tem servidor: a configuração partilhada é o ficheiro cenario.json do
+   repositório. Publicar grava-o pela API do GitHub com o token de quem publica (guardado só
+   neste browser); ao abrir, o site lê-o e compara-o com a gravação local. */
+const REPO='jhfmartins/simulador-sala', PUB_FILE='cenario.json', TOKEN_KEY='simuladorSala.token';
+let pubAtual=null;                     // data da publicação que esta página conhece
+const dataPT = d=>new Date(d).toLocaleString('pt-PT',{dateStyle:'short',timeStyle:'short'});
+const semMeta = d=>{ const {publicado:_, ...r}=d; return r; };
+async function lerPublicada(){
+  // ?t= contorna a cache do GitHub Pages, que serve o ficheiro antigo até 10 min
+  try{ const r=await fetch(PUB_FILE+'?t='+Date.now(),{cache:'no-store'}); return r.ok ? await r.json() : null; }
+  catch(e){ return null; }
+}
+function lerToken(){ try{ return localStorage.getItem(TOKEN_KEY); }catch(e){ return null; } }
+function gravarToken(t){ try{ t ? localStorage.setItem(TOKEN_KEY,t) : localStorage.removeItem(TOKEN_KEY); }catch(e){} }
+const b64utf8 = t=>{ let b=''; new TextEncoder().encode(t).forEach(x=>b+=String.fromCharCode(x)); return btoa(b); };
+const utf8b64 = t=>new TextDecoder().decode(Uint8Array.from(atob(t.replace(/\n/g,'')),c=>c.charCodeAt(0)));
+document.getElementById('publish').onclick=async()=>{
+  let tok=lerToken();
+  if(!tok){
+    tok=(prompt(`Token do GitHub com escrita em ${REPO}. Fica guardado só neste browser.`)||'').trim();
+    if(!tok) return;
+    gravarToken(tok);
+  }
+  const api=`https://api.github.com/repos/${REPO}/contents/${PUB_FILE}`;
+  const h={Authorization:'Bearer '+tok, Accept:'application/vnd.github+json'};
+  const tokenMau=()=>{ gravarToken(null); alert('Token inválido ou expirado. Carrega outra vez em Publicar para indicar outro.'); };
+  try{
+    const g=await fetch(api+'?ref=main',{headers:h, cache:'no-store'});
+    if(g.status===401) return tokenMau();
+    let sha;
+    if(g.ok){
+      const j=await g.json(); sha=j.sha;
+      let rem=null; try{ rem=JSON.parse(utf8b64(j.content)); }catch(e){}
+      // alguém publicou depois de esta página abrir: não sobrepor sem perguntar
+      if(rem && rem.publicado && rem.publicado!==pubAtual &&
+         !confirm(`Há uma configuração publicada em ${dataPT(rem.publicado)} que esta página não abriu. Substituí-la pela tua?`)) return;
+    }else if(g.status!==404){ alert(`Não foi possível ler ${PUB_FILE} no GitHub (${g.status}).`); return; }
+    if(!confirm('Publicar esta configuração? Passa a ser a que todos veem ao abrir o site.')) return;
+    const dump=dumpAtual(), d={...dump, publicado:new Date().toISOString()};
+    const r=await fetch(api,{method:'PUT', headers:h, body:JSON.stringify({
+      message:`Publicar configuração (${dataPT(d.publicado)})`, branch:'main', sha,
+      content:b64utf8(JSON.stringify(d,null,2)+'\n')})});
+    if(r.status===401) return tokenMau();
+    if(r.status===403||r.status===404){ alert(`O token não tem permissão de escrita em ${REPO}.`); return; }
+    if(r.status===409){ alert('Alguém publicou entretanto. Recarrega a página e tenta de novo.'); return; }
+    if(!r.ok){ alert(`A publicação falhou (${r.status}).`); return; }
+    pubAtual=d.publicado;
+    const st=lerStore(); st.atual=dump; st.data=d.publicado; st.base=pubAtual; gravarStore(st);
+    estadoGravacao(); aviso('Publicado — fica online para todos em 1–2 minutos.');
+  }catch(e){ alert('Sem ligação ao GitHub: '+e.message); }
 };
 
 window.addEventListener('keydown',e=>{
@@ -2149,6 +2203,8 @@ initPlanOnce();
 recalc();
 renderVersoes();
 (async()=>{
+  const pub=await lerPublicada();
+  if(pub) pubAtual=pub.publicado||null;
   const h=location.hash.match(/^#c=(.+)$/);
   if(h){
     try{
@@ -2159,7 +2215,23 @@ renderVersoes();
     }catch(e){ alert('Link inválido ou incompleto — a abrir a configuração guardada.'); }
   }
   const st=lerStore();
-  if(st.atual){ aplicarDump(st.atual); aviso('Aberta a configuração guardada.'); }
+  if(!st.atual){
+    if(pub){ aplicarDump(pub); aviso(`Aberta a configuração publicada${pubAtual?' em '+dataPT(pubAtual):''}.`); }
+    return;
+  }
+  // a gravação local já conhece esta publicação (ou não há nenhuma): abre a gravação
+  if(!pub || (st.base||null)===pubAtual){ aplicarDump(st.atual); aviso('Aberta a configuração guardada.'); return; }
+  const igual = JSON.stringify(semMeta(pub))===JSON.stringify(st.atual);
+  const usarPub = igual || confirm(`Há uma configuração publicada mais recente (${pubAtual?dataPT(pubAtual):'sem data'}).\n\n`+
+    'OK abre a publicada; a tua gravação fica nas Versões.\nCancelar abre a tua gravação neste browser.');
+  if(usarPub){
+    if(!igual){ st.versoes=st.versoes||[];
+      st.versoes.unshift({nome:'A minha antes da publicada', data:st.data||new Date().toISOString(), dump:st.atual}); }
+    st.atual=semMeta(pub);
+  }
+  st.base=pubAtual; gravarStore(st);
+  aplicarDump(st.atual); renderVersoes();
+  aviso(usarPub ? 'Aberta a configuração publicada.' : 'Aberta a tua gravação neste browser — não a publicada.');
 })();
 </script>
 </body>
