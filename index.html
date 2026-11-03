@@ -309,15 +309,16 @@
 
 const M = 40/3;                       // unidades por metro
 const ROOM_W = 7.35, ROOM_H = 13.90;
-const POLY = [[0,0],[7.35,0],[7.35,13.90],[3.20,13.90],[3.20,7.50],[0,7.50]];
+// parede do gabinete a 4,10 m da parede nascente (medido)
+const POLY = [[0,0],[7.35,0],[7.35,13.90],[3.25,13.90],[3.25,7.50],[0,7.50]];
 const G = 0.05;                       // grelha de análise
 const GW = Math.round(ROOM_W/G), GH = Math.round(ROOM_H/G);   // 147 × 278
 
 const DOORS = [
   {id:'ext', nome:'Porta exterior', tipo:'h', x0:0.49, x1:1.65, y:0.00,
    clear:{x0:0.49,x1:1.65,y0:0.00,y1:1.10}, alvo:[1.07,0.10]},
-  {id:'gab', nome:'Porta do gabinete', tipo:'v', x:3.20, y0:7.50, y1:8.60,
-   clear:{x0:3.20,x1:4.30,y0:7.50,y1:8.60}, alvo:[3.30,8.05]}
+  {id:'gab', nome:'Porta do gabinete', tipo:'v', x:3.25, y0:7.50, y1:8.60,
+   clear:{x0:3.25,x1:4.35,y0:7.50,y1:8.60}, alvo:[3.35,8.05]}
 ];
 
 /* -------------------------------- inventário ----------------------------- */
@@ -396,11 +397,11 @@ function estadoInicial(){
       {id:'R7', y:9.10,  x0:4.49, n:4, facing:'S', park:'new', a:[...rep('Auria 2 monitores',2),...rep('Auria Flat',2)]},
       {id:'R8', y:9.90,  x0:4.49, n:4, facing:'N', park:'new', a:[null,...rep('Auria 3 monitores',2),null]},
       {id:'R9', y:11.80, x0:4.49, n:2, facing:'S', park:'new', a:['Auria J Inverted',null]},
-      // à mesma cota de R5, encostada ao gabinete; o vão x 3,20–4,49 fica livre para o acesso a norte
+      // à mesma cota de R5, encostada ao gabinete; o vão x 3,25–4,49 fica livre para o acesso a norte
       {id:'R10', y:6.40, x0:1.07, n:3, facing:'S', park:'new', a:['PH Xtreme','Starship Duo','SDM']}
     ],
     soltas:[],
-    work:{on:false, x0:0.00, y0:4.50, x1:3.20, y1:7.50},
+    work:{on:false, x0:0.00, y0:4.50, x1:3.25, y1:7.50},
     bench:{on:true, x0:0.00, y0:1.20, x1:0.65, y1:3.20, frente:'E'},
     /* Mobiliário fixo: bloqueia a circulação e precisa de frente livre para se abrir. */
     moveis:[
@@ -414,11 +415,11 @@ function estadoInicial(){
     /* Pontos de luz: pequenas caixas com electricidade, com t tomadas; contam para as
        tomadas da ilha mais próxima, tal como as caixas de pavimento. */
     pontos:[],
-    /* Gabinete 3,10 × 3,75 m, encostado à parede com a porta (x = 3,20). */
-    gab:{x0:0.10, y0:7.50, x1:3.20, y1:11.25},
+    /* Gabinete 3,10 × 3,75 m, encostado à parede com a porta (x = 3,25). */
+    gab:{x0:0.15, y0:7.50, x1:3.25, y1:11.25},
     /* Mesas do gabinete. Em L: caixa w × h, braço horizontal com profundidade a,
        braço vertical com largura b; rot em quartos de volta (sentido horário), esp = espelhada. */
-    mesas:[{nome:'Mesa em L', tipo:'L', x:1.40, y:9.45, w:1.80, h:1.80, a:0.80, b:0.60, rot:0, esp:false}],
+    mesas:[{nome:'Mesa em L', tipo:'L', x:1.45, y:9.45, w:1.80, h:1.80, a:0.80, b:0.60, rot:0, esp:false}],
     exist:{incluir:false, fixas:true, n:20},
     /* Máquinas do inventário que saem da sala (cedidas a outra equipa): uma Áuria de cada configuração. */
     cedidas:{'Auria Flat':1, 'Auria J Curve':1, 'Auria J Inverted':1, 'Auria 3 monitores':1},
@@ -435,6 +436,7 @@ function estadoInicial(){
           'Extensão das janelas na parede nascente por confirmar. '+
           'Bancada Smart top deslocada para a parede poente (o armário ocupa o topo). '+
           'Medidas da sala tiradas a olho com o Rui — prever margem. '+
+          'Medido: 4,10 m da parede nascente até à parede da porta do gabinete (na zona da R6). '+
           'Localização das 20 máquinas do parque existente não confirmada.'
   };
 }
