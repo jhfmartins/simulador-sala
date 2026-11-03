@@ -214,6 +214,14 @@
         </div>
         <table id="pilarTbl"></table>
         <p class="hint">As baias não podem sobrepor pilares.</p>
+        <h2>Gabinete</h2>
+        <div id="gabCtl"></div>
+        <div class="bar"><button class="sm" id="addMesaL">+ mesa em L</button>
+          <button class="sm" id="addMesaR">+ mesa rectangular</button></div>
+        <table id="mesaTbl"></table>
+        <p class="hint">Arrasta as mesas no plano (ficam presas ao gabinete). Em L: w × h é a caixa
+        exterior, <i>a</i> a profundidade do braço de cima e <i>b</i> a largura do braço lateral;
+        ↻ roda 90°, ⇋ espelha.</p>
         <h2>Mobiliário fixo</h2>
         <div class="bar"><button class="sm" id="addMovel">+ móvel</button></div>
         <table id="movTbl"></table>
@@ -280,7 +288,6 @@
 const M = 40/3;                       // unidades por metro
 const ROOM_W = 7.35, ROOM_H = 13.90;
 const POLY = [[0,0],[7.35,0],[7.35,13.90],[3.20,13.90],[3.20,7.50],[0,7.50]];
-const OFFICE = {x0:0, y0:7.50, x1:3.20, y1:10.50};
 const G = 0.05;                       // grelha de análise
 const GW = Math.round(ROOM_W/G), GH = Math.round(ROOM_H/G);   // 147 × 278
 
@@ -379,6 +386,11 @@ function estadoInicial(){
     /* Janelas: troço de parede (E/W ao longo de y, N/S ao longo de x) com faixa livre à frente. */
     janelas:[{parede:'E', a0:0.00, a1:6.40}],
     pilares:[{tipo:'r', x:2.00, y:7.20, w:0.30, h:0.30, prov:true}], caixas:[],
+    /* Gabinete 3,10 × 3,75 m, encostado à parede com a porta (x = 3,20). */
+    gab:{x0:0.10, y0:7.50, x1:3.20, y1:11.25},
+    /* Mesas do gabinete. Em L: caixa w × h, braço horizontal com profundidade a,
+       braço vertical com largura b; rot em quartos de volta (sentido horário), esp = espelhada. */
+    mesas:[{nome:'Mesa em L', tipo:'L', x:1.40, y:9.45, w:1.80, h:1.80, a:0.80, b:0.60, rot:0, esp:false}],
     exist:{incluir:false, fixas:true, n:20},
     colorMode:'model',
     notas:'Pendências: carga eléctrica e térmica por confirmar com Instalações (chapas de '+
@@ -503,7 +515,7 @@ function compute(){
   const inside = new Uint8Array(GW*GH);
   for(let j=0;j<GH;j++) for(let i=0;i<GW;i++){
     const x=(i+0.5)*G, y=(j+0.5)*G;
-    inside[j*GW+i] = (pointInPoly(x,y,POLY) && !inRect(x,y,OFFICE) && !onPilar(x,y)) ? 1 : 0;
+    inside[j*GW+i] = (pointInPoly(x,y,POLY) && !inRect(x,y,S.gab) && !onPilar(x,y)) ? 1 : 0;
   }
   const free = inside.slice();
   const blockRect = r=>{
@@ -651,7 +663,7 @@ function compute(){
   }
 
   /* --- cadeia em X --- */
-  const xe=new Set([0,ROOM_W,OFFICE.x1]);
+  const xe=new Set([0,ROOM_W,r3(Math.min(S.gab.x1,ROOM_W))]);
   S.rows.forEach(r=>{ xe.add(r3(r.x0)); xe.add(rowEnd(r)); });
   const xs=[...xe].sort((a,b)=>a-b);
   const xchain=[];
@@ -721,6 +733,15 @@ function compute(){
     g.faltamCaixas = g.maq>g.cap ? Math.ceil((g.maq-g.cap)/P.tomadas) : 0;
   });
 
+  /* --- gabinete: mesas dentro e sem sobreposição --- */
+  const gb=S.gab, mRs=S.mesas.map(mesaRects);
+  const mesas=S.mesas.map((ms,i)=>({
+    fora: mRs[i].some(r=>r.x0<gb.x0-1e-9||r.x1>gb.x1+1e-9||r.y0<gb.y0-1e-9||r.y1>gb.y1+1e-9),
+    sobre: mRs.some((o,j)=>j!==i && o.some(a=>mRs[i].some(b=>overlap(a,b))))
+  }));
+  const areaMesas = mRs.flat().reduce((a,r)=>a+(r.x1-r.x0)*(r.y1-r.y0),0)
+    - S.mesas.reduce((a,ms)=>a+(ms.tipo==='L'?ms.a*ms.b:0),0);   // canto do L contado duas vezes
+
   /* --- métricas --- */
   const areaUtil = insideN*G*G;
   const nBays = bays.length;
@@ -729,7 +750,7 @@ function compute(){
   const demanda = totalNovas + (S.exist.incluir ? S.exist.n : 0);
 
   R = {inside, free, reach, bays, bandas, xchain, portas, pendentes, usados, benchN,
-       janelas, acessos, grupos,
+       janelas, acessos, grupos, mesas, areaMesas,
        metr:{areaUtil, nBays, colocadas, demanda,
              porColocar: pendentes.reduce((a,p)=>a+p.n,0),
              m2Baia: nBays? areaUtil/nBays : 0,
@@ -791,9 +812,19 @@ function render(){
   }
 
   // gabinete
-  o.push(rect(OFFICE,'#fafafa','#15181c',.6,'2.5 1.5'));
-  o.push(txt((OFFICE.x0+OFFICE.x1)/2,(OFFICE.y0+OFFICE.y1)/2+0.18,'Gabinete',2.6,'#4a5158'));
-  o.push(txt((OFFICE.x0+OFFICE.x1)/2,(OFFICE.y0+OFFICE.y1)/2-0.20,'9,60 m² · postos de trabalho',2.0,'#7a8188'));
+  const gb=S.gab;
+  o.push(rect(gb,'#fafafa','#15181c',.6,'2.5 1.5'));
+  o.push(txt(gb.x0+0.15,gb.y0+0.45,`Gabinete · ${nf(gb.x1-gb.x0)} × ${nf(gb.y1-gb.y0)} m · ${nf((gb.x1-gb.x0)*(gb.y1-gb.y0))} m²`,1.9,'#4a5158')
+    .replace('text-anchor="middle"','text-anchor="start"'));
+  S.mesas.forEach((ms,i)=>{
+    const bad=R.mesas[i].fora||R.mesas[i].sobre;
+    const rs=mesaRects(ms), cor=bad?'#a01b1b':'#3d6b8f';
+    o.push(`<g data-mesa="${i}" style="cursor:move">`+
+      rs.map(r=>rect(r,'#dfe8f0','none',0)).join('')+
+      rs.map(r=>rect(r,'none',cor,.5)).join('')+`</g>`);
+    const c=mesaRects(ms).reduce((a,r)=>((r.x1-r.x0)*(r.y1-r.y0)>(a.x1-a.x0)*(a.y1-a.y0)?r:a));
+    o.push(txt((c.x0+c.x1)/2,(c.y0+c.y1)/2,ms.nome,1.7,cor).replace('<text','<text pointer-events="none"'));
+  });
 
   // área de trabalho
   if(S.work.on){
@@ -960,6 +991,21 @@ function rect(r,fill,stroke,sw,dash,attrs){
 }
 function txt(x,y,t,fs,c){ return `<text x="${X(x)}" y="${Y(y)+fs*0.36}" text-anchor="middle" font-size="${r2(fs)}" fill="${c}">${esc(t)}</text>`; }
 function txtAbs(x,y,t,fs,c){ return `<text x="${r3(x)}" y="${r3(y)}" text-anchor="middle" font-size="${r2(fs)}" fill="${c}">${esc(t)}</text>`; }
+/* Rectângulos absolutos de uma mesa. Em L, na orientação de base (rot 0) o braço de
+   profundidade a corre ao longo do topo e o de largura b desce pelo lado direito. */
+function mesaRects(ms){
+  if(ms.tipo!=='L') return [{x0:ms.x, y0:ms.y, x1:r3(ms.x+ms.w), y1:r3(ms.y+ms.h)}];
+  const w=ms.w, h=ms.h;
+  let rs=[{x0:0, y0:h-ms.a, x1:w, y1:h}, {x0:w-ms.b, y0:0, x1:w, y1:h}];
+  if(ms.esp) rs=rs.map(r=>({x0:w-r.x1, x1:w-r.x0, y0:r.y0, y1:r.y1}));
+  let W=w;
+  for(let k=0;k<(ms.rot||0)%4;k++){   // 90° horário com y para cima: (x,y) → (y, W−x)
+    rs=rs.map(r=>({x0:r.y0, x1:r.y1, y0:W-r.x1, y1:W-r.x0}));
+    W = W===w ? h : w;
+  }
+  return rs.map(r=>({x0:r3(ms.x+r.x0), y0:r3(ms.y+r.y0), x1:r3(ms.x+r.x1), y1:r3(ms.y+r.y1)}));
+}
+function mesaDims(ms){ return (ms.tipo==='L' && (ms.rot||0)%2) ? [ms.h, ms.w] : [ms.w, ms.h]; }
 function handle(x,y,kind){
   return `<rect data-handle="${kind}" x="${X(x)-2}" y="${Y(y)-2}" width="4" height="4"
     fill="#fff" stroke="#0b57a4" stroke-width=".7" style="cursor:nwse-resize"/>`;
@@ -1059,6 +1105,22 @@ function wirePlan(){
         // os móveis encostam ao topo: o canto de redimensionar é o inferior direito
         if(mov) t.y0=Math.min(t.y1-0.2, Math.max(0, r2(Math.round(p.y/0.05)*0.05)));
         else t.y1=Math.max(t.y0+0.4, Math.min(ROOM_H, r2(Math.round(p.y/0.05)*0.05)));
+        recalc();
+      };
+      const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+      window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
+    });
+  });
+  // mesas do gabinete: arrastam-se presas aos limites do gabinete
+  svg.querySelectorAll('[data-mesa]').forEach(g=>{
+    g.addEventListener('pointerdown',ev=>{
+      ev.stopPropagation();
+      const ms=S.mesas[+g.dataset.mesa], p0=svgPoint(ev), o={x:ms.x, y:ms.y};
+      const [w,h]=mesaDims(ms), gb=S.gab, snap=v=>r2(Math.round(v/0.05)*0.05);
+      const move=e2=>{
+        const p=svgPoint(e2);
+        ms.x=Math.max(gb.x0, Math.min(r2(gb.x1-w), snap(o.x+p.x-p0.x)));
+        ms.y=Math.max(gb.y0, Math.min(r2(gb.y1-h), snap(o.y+p.y-p0.y)));
         recalc();
       };
       const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
@@ -1190,6 +1252,13 @@ function renderRules(){
     gf.length ? `Faltam ${totF} caixa(s): `+gf.map(g=>`${g.nome} ${g.maq} máq. / ${g.cap} tomadas → +${g.faltamCaixas}`).join(' · ')+
       '. Ver aba Obstáculos → Propor caixas.'
     : `Todas as ilhas com tomadas suficientes (${S.caixas.length} caixa(s)).`);
+
+  const gA=(S.gab.x1-S.gab.x0)*(S.gab.y1-S.gab.y0);
+  const mm=S.mesas.filter((ms,i)=>R.mesas[i].fora||R.mesas[i].sobre);
+  add(mm.length?'bad':'', '10 · Gabinete',
+    mm.length ? mm.map(ms=>ms.nome).join(', ')+' fora do gabinete ou sobreposta(s).'
+    : `${S.mesas.length} mesa(s) dentro de ${nf(S.gab.x1-S.gab.x0)} × ${nf(S.gab.y1-S.gab.y0)} m. `+
+      `Mesas ${nf(R.areaMesas)} m² · livre ${nf(gA-R.areaMesas)} m².`);
 
   if(P.bayD < 0.732) add('bad','Profundidade de baia insuficiente',
     `${nf(P.bayD)} m < 0,732 m — o cabinete mais fundo do catálogo (700×732 mm) não cabe.`);
@@ -1536,6 +1605,36 @@ function renderObst(){
       <td class="n">${g.cap}</td><td class="n" style="${g.faltamCaixas?'color:var(--bad);font-weight:700':''}">${
       g.faltamCaixas?'+'+g.faltamCaixas:'—'}</td></tr>`).join('');
 
+  const gb=S.gab;
+  document.getElementById('gabCtl').innerHTML=
+    `<div class="bar">${['x0','y0','x1','y1'].map(f=>`<span style="align-self:center;color:var(--ink2)">${f}</span>
+      <input class="mini" data-g="${f}" value="${nf(gb[f])}">`).join('')}</div>`;
+  document.querySelectorAll('[data-g]').forEach(i=>i.onchange=()=>{
+    const v=parseFloat(String(i.value).replace(',','.')); if(!isNaN(v)) S.gab[i.dataset.g]=r2(v); recalc();
+  });
+  document.getElementById('mesaTbl').innerHTML = S.mesas.length
+    ? `<tr><th>nome</th><th class="n">w</th><th class="n">h</th><th class="n">a</th><th class="n">b</th><th></th></tr>`+
+      S.mesas.map((ms,i)=>`<tr data-i="${i}">
+        <td><input data-f="nome" value="${esc(ms.nome)}" style="width:78px"></td>
+        ${['w','h','a','b'].map(f=>(ms.tipo!=='L'&&(f==='a'||f==='b'))?'<td></td>'
+          :`<td class="n"><input class="mini" data-f="${f}" value="${nf(ms[f])}"></td>`).join('')}
+        <td style="white-space:nowrap">${ms.tipo==='L'?'<button class="sm" data-a="rot" title="rodar 90°">↻</button><button class="sm" data-a="esp" title="espelhar">⇋</button>':
+          '<button class="sm" data-a="rot" title="rodar 90°">↻</button>'}<button class="sm" data-a="del">✕</button></td></tr>`).join('')
+    : `<tr><td style="color:var(--ink2)">Sem mesas.</td></tr>`;
+  document.querySelectorAll('#mesaTbl tr[data-i]').forEach(tr=>{
+    const ms=S.mesas[+tr.dataset.i];
+    tr.querySelectorAll('input[data-f]').forEach(i=>i.onchange=()=>{
+      if(i.dataset.f==='nome'){ ms.nome=i.value.trim()||ms.nome; return recalc(); }
+      const v=parseFloat(String(i.value).replace(',','.')); if(v>0) ms[i.dataset.f]=r2(v); recalc();
+    });
+    tr.querySelector('[data-a=rot]').onclick=()=>{
+      if(ms.tipo==='L') ms.rot=((ms.rot||0)+1)%4; else [ms.w,ms.h]=[ms.h,ms.w];
+      recalc();
+    };
+    const e=tr.querySelector('[data-a=esp]'); if(e) e.onclick=()=>{ ms.esp=!ms.esp; recalc(); };
+    tr.querySelector('[data-a=del]').onclick=()=>{ S.mesas.splice(+tr.dataset.i,1); recalc(); };
+  });
+
   const FR={S:'sul',N:'norte',E:'nasc.',W:'poente','':'—'};
   document.getElementById('movTbl').innerHTML = S.moveis.length
     ? `<tr><th>nome</th><th class="n">x₀</th><th class="n">y₀</th><th class="n">x₁</th><th class="n">y₁</th><th>frente</th><th></th></tr>`+
@@ -1604,7 +1703,7 @@ function proporCaixas(){
 }
 
 function snapshot(){ return JSON.parse(JSON.stringify({p:S.p,rows:S.rows,soltas:S.soltas,work:S.work,
-  bench:S.bench,moveis:S.moveis,janelas:S.janelas,pilares:S.pilares,caixas:S.caixas,exist:S.exist,layoutMode:S.layoutMode,notas:S.notas})); }
+  bench:S.bench,gab:S.gab,mesas:S.mesas,moveis:S.moveis,janelas:S.janelas,pilares:S.pilares,caixas:S.caixas,exist:S.exist,layoutMode:S.layoutMode,notas:S.notas})); }
 
 function renderScen(){
   const t=document.getElementById('scenTbl');
@@ -1709,6 +1808,10 @@ document.getElementById('addPilarC').onclick=()=>{ S.pilares.push({tipo:'c',x:3.
 document.getElementById('addPilarR').onclick=()=>{ S.pilares.push({tipo:'r',x:3.60,y:6.00,w:0.30,h:0.30}); recalc(); };
 document.getElementById('addBox').onclick=()=>{ S.caixas.push({x:4.00,y:5.00}); recalc(); };
 document.getElementById('propBox').onclick=proporCaixas;
+document.getElementById('addMesaL').onclick=()=>{
+  S.mesas.push({nome:'Mesa '+(S.mesas.length+1), tipo:'L', x:S.gab.x0, y:S.gab.y0, w:1.80, h:1.80, a:0.80, b:0.60, rot:0, esp:false}); recalc(); };
+document.getElementById('addMesaR').onclick=()=>{
+  S.mesas.push({nome:'Mesa '+(S.mesas.length+1), tipo:'R', x:S.gab.x0, y:S.gab.y0, w:1.40, h:0.70}); recalc(); };
 document.getElementById('delPropBox').onclick=()=>{ S.caixas=S.caixas.filter(c=>!c.nova); recalc(); };
 document.getElementById('tomadas').onchange=e=>{ const v=parseInt(e.target.value); if(v>0) S.p.tomadas=v; recalc(); };
 document.getElementById('janFolga').onchange=e=>{
@@ -1771,10 +1874,12 @@ document.getElementById('fileIn').onchange=ev=>{
       const d=JSON.parse(fr.result);
       const base=estadoInicial();
       S.soltas=[]; S.moveis=[]; S.janelas=[];
-      ['p','rows','soltas','work','bench','moveis','janelas','pilares','caixas','exist','layoutMode','notas','colorMode']
+      ['p','rows','soltas','work','bench','gab','mesas','moveis','janelas','pilares','caixas','exist','layoutMode','notas','colorMode']
         .forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
       if(Array.isArray(d.cenarios)) cenarios=d.cenarios.map(c=>({nome:c.nome, snap:c.snap, met:{}}));
-      S.p={...base.p, ...S.p};   // JSON antigos não trazem os parâmetros novos
+      S.p={...base.p, ...S.p};
+      if(!d.gab) S.gab=base.gab;
+      if(!d.mesas) S.mesas=base.mesas;   // JSON antigos não trazem os parâmetros novos
       S.rows.forEach(r=>{ r.a=r.a||[]; r.a.length=r.n; });
       sel=null; selRow=null;
       document.getElementById('colorMode').value=S.colorMode;
