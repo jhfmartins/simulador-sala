@@ -221,7 +221,7 @@
         <table id="mesaTbl"></table>
         <p class="hint">Arrasta as mesas no plano (ficam presas ao gabinete). Em L: w × h é a caixa
         exterior, <i>a</i> a profundidade do braço de cima e <i>b</i> a largura do braço lateral;
-        ↻ roda 90°, ⇋ espelha.</p>
+        ↻ roda 90°, ⇋ espelha. No plano: clica na mesa e carrega <b>R</b>, ou faz duplo clique.</p>
         <h2>Mobiliário fixo</h2>
         <div class="bar"><button class="sm" id="addMovel">+ móvel</button></div>
         <table id="movTbl"></table>
@@ -818,10 +818,11 @@ function render(){
     .replace('text-anchor="middle"','text-anchor="start"'));
   S.mesas.forEach((ms,i)=>{
     const bad=R.mesas[i].fora||R.mesas[i].sobre;
-    const rs=mesaRects(ms), cor=bad?'#a01b1b':'#3d6b8f';
+    const rs=mesaRects(ms), selM=sel&&sel.tipo==='mesa'&&sel.i===i;
+    const cor=bad?'#a01b1b':selM?'#0b57a4':'#3d6b8f';
     o.push(`<g data-mesa="${i}" style="cursor:move">`+
       rs.map(r=>rect(r,'#dfe8f0','none',0)).join('')+
-      rs.map(r=>rect(r,'none',cor,.5)).join('')+`</g>`);
+      rs.map(r=>rect(r,'none',cor,selM?1.1:.5)).join('')+`</g>`);
     const c=mesaRects(ms).reduce((a,r)=>((r.x1-r.x0)*(r.y1-r.y0)>(a.x1-a.x0)*(a.y1-a.y0)?r:a));
     o.push(txt((c.x0+c.x1)/2,(c.y0+c.y1)/2,ms.nome,1.7,cor).replace('<text','<text pointer-events="none"'));
   });
@@ -1005,6 +1006,10 @@ function mesaRects(ms){
   }
   return rs.map(r=>({x0:r3(ms.x+r.x0), y0:r3(ms.y+r.y0), x1:r3(ms.x+r.x1), y1:r3(ms.y+r.y1)}));
 }
+let ultimoToqueMesa={i:-1, t:0};
+function rodarMesa(ms){
+  if(ms.tipo==='L') ms.rot=((ms.rot||0)+1)%4; else [ms.w,ms.h]=[ms.h,ms.w];
+}
 function mesaDims(ms){ return (ms.tipo==='L' && (ms.rot||0)%2) ? [ms.h, ms.w] : [ms.w, ms.h]; }
 function handle(x,y,kind){
   return `<rect data-handle="${kind}" x="${X(x)-2}" y="${Y(y)-2}" width="4" height="4"
@@ -1115,7 +1120,15 @@ function wirePlan(){
   svg.querySelectorAll('[data-mesa]').forEach(g=>{
     g.addEventListener('pointerdown',ev=>{
       ev.stopPropagation();
-      const ms=S.mesas[+g.dataset.mesa], p0=svgPoint(ev), o={x:ms.x, y:ms.y};
+      /* Duplo clique detectado à mão: o render() entre os dois cliques substitui o
+         elemento e o navegador deixa de emitir 'dblclick'. */
+      const i=+g.dataset.mesa, agora=Date.now();
+      if(ultimoToqueMesa.i===i && agora-ultimoToqueMesa.t<400){
+        ultimoToqueMesa.t=0; rodarMesa(S.mesas[i]); recalc(); return;
+      }
+      ultimoToqueMesa={i, t:agora};
+      sel={tipo:'mesa', i};
+      const ms=S.mesas[i], p0=svgPoint(ev), o={x:ms.x, y:ms.y};
       const [w,h]=mesaDims(ms), gb=S.gab, snap=v=>r2(Math.round(v/0.05)*0.05);
       const move=e2=>{
         const p=svgPoint(e2);
@@ -1123,9 +1136,10 @@ function wirePlan(){
         ms.y=Math.max(gb.y0, Math.min(r2(gb.y1-h), snap(o.y+p.y-p0.y)));
         recalc();
       };
-      const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+      const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); render(); };
       window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
     });
+    g.addEventListener('click',ev=>ev.stopPropagation());
   });
   // arrastar áreas (trabalho / bancada) pelo interior
   svg.querySelectorAll('[data-move]').forEach(el=>{
@@ -1628,8 +1642,7 @@ function renderObst(){
       const v=parseFloat(String(i.value).replace(',','.')); if(v>0) ms[i.dataset.f]=r2(v); recalc();
     });
     tr.querySelector('[data-a=rot]').onclick=()=>{
-      if(ms.tipo==='L') ms.rot=((ms.rot||0)+1)%4; else [ms.w,ms.h]=[ms.h,ms.w];
-      recalc();
+      rodarMesa(ms); recalc();
     };
     const e=tr.querySelector('[data-a=esp]'); if(e) e.onclick=()=>{ ms.esp=!ms.esp; recalc(); };
     tr.querySelector('[data-a=del]').onclick=()=>{ S.mesas.splice(+tr.dataset.i,1); recalc(); };
@@ -1896,6 +1909,11 @@ document.getElementById('fileIn').onchange=ev=>{
 };
 window.addEventListener('keydown',e=>{
   if(!sel || e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA' || e.target.tagName==='SELECT') return;
+  if(sel.tipo==='mesa'){
+    const ms=S.mesas[sel.i]; if(!ms) return;
+    if(e.key==='r'||e.key==='R'){ rodarMesa(ms); e.preventDefault(); recalc(); }
+    return;
+  }
   if(e.key==='Delete'||e.key==='Backspace'){
     if(sel.tipo==='solta'){ S.soltas=S.soltas.filter(u=>u.id!==sel.id); sel=null; }
     else { const row=S.rows.find(r=>r.id===sel.rid); if(row) row.a[sel.k]=null; }
