@@ -398,8 +398,9 @@ function estadoInicial(){
     rows:[
       {id:'R1', y:1.20,  x0:1.99, n:6, facing:'S', park:'new', a:rep('Galaxy II',6)},
       {id:'R2', y:2.00,  x0:1.99, n:6, facing:'N', park:'new', a:[...rep('Galaxy II',6)]},
-      {id:'R3', y:3.90,  x0:3.41, n:4, facing:'S', park:'new', a:rep('Phantom II',4)},
-      {id:'R4', y:4.70,  x0:3.41, n:4, facing:'N', park:'new', a:[...rep('Shadow III',3),'PH Xtreme']},
+      // R3/R4: topo nascente a 0,60 m da parede das janelas (medido no canto sul da R3, o mais próximo)
+      {id:'R3', y:3.90,  x0:3.62, n:4, facing:'S', park:'new', a:rep('Phantom II',4)},
+      {id:'R4', y:4.70,  x0:3.62, n:4, facing:'N', park:'new', a:[...rep('Shadow III',3),'PH Xtreme']},
       {id:'R5', y:7.65,  x0:4.34, n:4, facing:'S', park:'new', a:rep('Starship II',4)},
       {id:'R6', y:8.45,  x0:4.34, n:4, facing:'N', park:'new', a:['PH Xtreme','Starship Duo','PH Xtreme II','Galaxy II']},
       {id:'R7', y:10.35, x0:4.34, n:4, facing:'S', park:'new', a:['Phantom','Phantom II','Auria Flat','SDM']},
@@ -420,7 +421,11 @@ function estadoInicial(){
       /* Um atrás do outro junto à parede das janelas, entre a R10 e o armário (posição escolhida no
          plano). O Rack 1 abre para poente: a sul tem as costas do Rack 2. */
       {nome:'Rack 1',  x0:6.82, y0:16.40, x1:7.43, y1:17.01, frente:'W'},
-      {nome:'Rack 2',  x0:6.73, y0:15.70, x1:7.34, y1:16.31, frente:'S'}
+      {nome:'Rack 2',  x0:6.73, y0:15.70, x1:7.34, y1:16.31, frente:'S'},
+      /* Mesa de 4 lugares (2,80 × 1,60) no espaço livre a poente da R3/R4, na vertical (lado longo
+         norte–sul), com 2 lugares de cada lado; posição escolhida no plano, recuada 3 cm para poente
+         para não entrar no vão da porta do gabinete; 1,20 m de passagem até à R3/R4. */
+      {nome:'Mesa',    x0:0.82, y0:4.00, x1:2.42, y1:6.80, frente:'E'}
     ],
     /* Janelas: troço de parede (E/W ao longo de y, N/S ao longo de x) com faixa livre à frente. */
     /* Só contam as janelas que abrem; as posições na parede nascente estão por medir. */
@@ -431,11 +436,11 @@ function estadoInicial(){
     /* Pontos de luz: pequenas caixas com electricidade, com t tomadas; contam para as
        tomadas da ilha mais próxima, tal como as caixas de pavimento. */
     /* Posições fixadas no plano, na ordem L1–L23. L16–L21 são luzes de teto (teto:true): só
-       iluminação, não contam como tomadas para as ilhas. L22–L23 junto ao canto sul-nascente. */
+       iluminação, não contam como tomadas para as ilhas. L12 é ponto de internet (net:true), também sem tomadas. L22–L23 junto ao canto sul-nascente. */
     pontos:[
       {x:7.68, y:16.80, t:4}, {x:7.60, y:16.10, t:4}, {x:5.55, y:4.70, t:4}, {x:6.50, y:8.45, t:4},
       {x:5.05, y:8.50, t:4}, {x:6.50, y:11.10, t:4}, {x:5.05, y:11.15, t:4}, {x:6.45, y:13.80, t:4},
-      {x:5.10, y:13.75, t:4}, {x:4.10, y:2.00, t:4}, {x:5.55, y:1.95, t:4}, {x:2.65, y:4.65, t:4},
+      {x:5.10, y:13.75, t:4}, {x:4.10, y:2.00, t:4}, {x:5.55, y:1.95, t:4}, {x:2.65, y:4.65, t:0, net:true},
       {x:4.10, y:4.65, t:4}, {x:2.70, y:2.00, t:4}, {x:4.85, y:16.15, t:4},
       {x:7.68, y:13.80, t:0, teto:true}, {x:7.68, y:11.15, t:0, teto:true}, {x:7.55, y:8.45, t:0, teto:true},
       {x:5.35, y:0.15, t:0, teto:true}, {x:3.50, y:0.25, t:0, teto:true}, {x:1.70, y:0.25, t:0, teto:true},
@@ -461,14 +466,15 @@ function estadoInicial(){
           'a R9 passa a 4 baias (J Inverted e 3 monitores) e a R10 nova, costas com costas com ela, tem a J Curve e a Flat. '+
           'As 2 Auria 2 monitores passam da R7 para a R10 (4 baias); para a R7 vêm a Phantom e a Phantom II das baias '+
           'poente da R4 e da R3, que deixam de existir (R3 e R4 com 6 baias, alinhadas com a R1/R2). '+
-          'Depois, as 2 baias poente da R3 (2 Phantom II) e da R4 (Phantom e Shadow III) passam para uma R8 nova, costas com costas com a R7: R3 e R4 ficam com 4 baias, de x = 3,41 m (junto à R5 só cabiam 3, por causa da porta do gabinete). '+
+          'Depois, as 2 baias poente da R3 (2 Phantom II) e da R4 (Phantom e Shadow III) passam para uma R8 nova, costas com costas com a R7: R3 e R4 ficam com 4 baias, de x = 3,62 a 6,46 m (topo nascente a 0,60 m da parede das janelas) (junto à R5 só cabiam 3, por causa da porta do gabinete). '+
           'Os 2 racks ficam um atrás do outro junto à parede das janelas, entre a R10 e o armário; os cabos de rede que hoje saem pela parede de vidro '+
           'têm de passar para os racks. Porta do gabinete é de correr. '+
           'Armário (parede norte, a partir do canto direito, ≈3,3–3,5 m): profundidade por medir. '+
           'Janelas: só contam as que abrem, na parede nascente; posições por medir. A parede norte (F) não tem janelas. '+
+          'Mesa de 4 lugares (2,80 × 1,60 m) a poente da R3/R4, na vertical, de x = 0,82 a 2,42 e y = 4,00 a 6,80 (posição escolhida no plano, recuada 3 cm para livrar o vão da porta do gabinete); fica 1,20 m de passagem até à R3/R4. '+
           'Bancada Smart top (1,80 × 0,55 m) fixa entre a R10 e o armário, ao lado dos racks. '+
           'A antiga R8 saiu: as suas 4 Áurias (2 J Curve, 3 monitores e Flat) são cedidas. '+
-          'Pontos de luz L1–L15, L22 e L23 com 4 tomadas cada; L16–L21 são luzes de teto (L16–L18 junto à parede das janelas, '+
+          'Pontos de luz L1–L11, L13–L15, L22 e L23 com 4 tomadas cada; L12 é ponto de internet (sem tomadas); L16–L21 são luzes de teto (L16–L18 junto à parede das janelas, '+
           'L19–L21 junto à parede sul). '+
           'Paredes (cantos A–F a partir da porta exterior): 1 sul A–B 6,90; 2 janelas B–C 18,68 (medida); '+
           '3 norte C–D 4,54 (medida); 4 nascente do gabinete D–E 10,30 (medida); '+
@@ -837,7 +843,7 @@ function compute(){
     if(best) best.caixas.push(i);
   });
   S.pontos.forEach((pt,i)=>{
-    if(pt.teto) return;                  // luz de teto: só iluminação, não dá tomadas às ilhas
+    if(pt.teto || pt.net) return;        // luz de teto e ponto de internet não dão tomadas às ilhas
     let best=null, bd=Infinity;
     grupos.forEach(g=>{ const d=distRect(pt.x,pt.y,g.bb); if(d<bd){ bd=d; best=g; } });
     if(best) best.pontos.push(i);
@@ -1045,6 +1051,15 @@ function render(){
         <path d="M ${cx-k} ${cy-k} L ${cx+k} ${cy+k} M ${cx-k} ${cy+k} L ${cx+k} ${cy-k}" stroke="#8a5a00" stroke-width=".5"/></g>`);
       // etiqueta curta por cima do símbolo, para não tapar as baias ao lado
       o.push(txt(pt.x,pt.y+0.30,'L'+(i+1)+' · teto',1.6,'#8a5a00').replace('<text','<text pointer-events="none"'));
+      return;
+    }
+    if(pt.net){
+      // ponto de internet (rede): quadrado azul com três ligações, para não se confundir com luz
+      const cx=X(pt.x), cy=Y(pt.y);
+      o.push(`<g data-ponto="${i}" style="cursor:move">
+        <rect x="${cx-1.8}" y="${cy-1.8}" width="3.6" height="3.6" rx=".4" fill="#e3eefa" stroke="#1d4e79" stroke-width=".5"/>
+        <path d="M ${cx} ${cy-1.1} V ${cy+0.3} M ${cx-1} ${cy+1.1} V ${cy+0.3} H ${cx+1} V ${cy+1.1}" fill="none" stroke="#1d4e79" stroke-width=".45"/></g>`);
+      o.push(txt(pt.x,pt.y+0.30,'L'+(i+1)+' · internet',1.6,'#1d4e79').replace('<text','<text pointer-events="none"'));
       return;
     }
     o.push(`<g data-ponto="${i}" style="cursor:move">
@@ -1466,8 +1481,9 @@ function renderRules(){
   add(gf.length?'warn':'', `9 · Tomadas (${P.tomadas} úteis por caixa)`,
     gf.length ? `Faltam ${totF} caixa(s): `+gf.map(g=>`${g.nome} ${g.maq} máq. / ${g.cap} tomadas → +${g.faltamCaixas}`).join(' · ')+
       '. Ver aba Obstáculos → Propor caixas.'
-    : `Todas as ilhas com tomadas suficientes (${S.caixas.length} caixa(s), ${S.pontos.filter(p=>!p.teto).length} ponto(s) de luz`+
-      `${S.pontos.some(p=>p.teto)?`; ${S.pontos.filter(p=>p.teto).length} luz(es) de teto não contam`:''}).`);
+    : `Todas as ilhas com tomadas suficientes (${S.caixas.length} caixa(s), ${S.pontos.filter(p=>!p.teto&&!p.net).length} ponto(s) de luz`+
+      `${S.pontos.some(p=>p.teto)?`; ${S.pontos.filter(p=>p.teto).length} luz(es) de teto não contam`:''}`+
+      `${S.pontos.some(p=>p.net)?`; ${S.pontos.filter(p=>p.net).length} ponto(s) de internet não contam`:''}).`);
 
   const gA=(S.gab.x1-S.gab.x0)*(S.gab.y1-S.gab.y0);
   const mm=S.mesas.filter((ms,i)=>R.mesas[i].fora||R.mesas[i].sobre);
@@ -1835,10 +1851,10 @@ function renderObst(){
   document.getElementById('pontoTbl').innerHTML = S.pontos.length
     ? `<tr><th>#</th><th>tipo</th><th class="n">x</th><th class="n">y</th><th class="n">tomadas</th><th>serve</th><th></th></tr>`+
       S.pontos.map((pt,i)=>`<tr data-i="${i}"><td>L${i+1}</td>
-        <td><button class="sm" data-a="tipo">${pt.teto?'Luz teto':'Tomadas'}</button></td>
+        <td><button class="sm" data-a="tipo">${pt.teto?'Luz teto':pt.net?'Internet':'Tomadas'}</button></td>
         <td class="n"><input class="mini" data-f="x" value="${nf(pt.x)}"></td>
         <td class="n"><input class="mini" data-f="y" value="${nf(pt.y)}"></td>
-        <td class="n">${pt.teto?'—':`<input class="mini" data-f="t" value="${pt.t}">`}</td>
+        <td class="n">${pt.teto||pt.net?'—':`<input class="mini" data-f="t" value="${pt.t}">`}</td>
         <td>${esc((R.grupos.find(g=>g.pontos.includes(i))||{nome:'—'}).nome)}</td>
         <td><button class="sm" data-a="del">✕</button></td></tr>`).join('')
     : `<tr><td style="color:var(--ink2)">Sem pontos de luz.</td></tr>`;
@@ -1848,7 +1864,9 @@ function renderObst(){
       const v=parseFloat(String(i.value).replace(',','.')); if(isNaN(v)) return recalc();
       pt[i.dataset.f] = i.dataset.f==='t' ? Math.max(0,Math.round(v)) : r2(v); recalc();
     });
-    tr.querySelector('[data-a=tipo]').onclick=()=>{ if(pt.teto) delete pt.teto; else pt.teto=true; recalc(); };
+    tr.querySelector('[data-a=tipo]').onclick=()=>{
+      // ciclo tomadas → luz teto → internet → tomadas
+      if(pt.teto){ delete pt.teto; pt.net=true; } else if(pt.net) delete pt.net; else pt.teto=true; recalc(); };
     tr.querySelector('[data-a=del]').onclick=()=>{ S.pontos.splice(+tr.dataset.i,1); recalc(); };
   });
 
