@@ -415,9 +415,10 @@ function estadoInicial(){
     moveis:[
       // rodado com a parede D–C (≈9°), encostado a ela e a 0,02 m da parede das janelas
       {nome:'Armário', x0:4.28, y0:17.77, x1:7.61, y1:18.37, rot:9.01, frente:'S'},
-      // ao lado da R10, encostados à parede das janelas, de frente para norte (a R9 ocupa o lado sul)
-      {nome:'Rack 1',  x0:6.17, y0:13.65, x1:6.78, y1:14.26, frente:'N'},
-      {nome:'Rack 2',  x0:6.78, y0:13.65, x1:7.39, y1:14.26, frente:'N'}
+      /* Um atrás do outro junto à parede das janelas, entre a R10 e o armário (posição escolhida no
+         plano). O Rack 1 abre para poente: a sul tem as costas do Rack 2. */
+      {nome:'Rack 1',  x0:6.82, y0:16.40, x1:7.43, y1:17.01, frente:'W'},
+      {nome:'Rack 2',  x0:6.73, y0:15.70, x1:7.34, y1:16.31, frente:'S'}
     ],
     /* Janelas: troço de parede (E/W ao longo de y, N/S ao longo de x) com faixa livre à frente. */
     /* Só contam as janelas que abrem; as posições na parede nascente estão por medir. */
@@ -446,7 +447,7 @@ function estadoInicial(){
           '≈1,77 m da parede das janelas e ≈6,61 m da parede sul (medidos no desenho) — confirmar em obra. '+
           'As 4 Áurias que tinham sido cedidas (Flat, J Curve, J Inverted e 3 monitores) voltam à sala: '+
           'a R9 passa a 4 baias (J Inverted e 3 monitores) e a R10 nova, costas com costas com ela, tem a J Curve e a Flat. '+
-          'Os 2 racks ficam ao lado da R10, encostados à parede das janelas e de frente para norte; os cabos de rede que hoje saem pela parede de vidro '+
+          'Os 2 racks ficam um atrás do outro junto à parede das janelas, entre a R10 e o armário; os cabos de rede que hoje saem pela parede de vidro '+
           'têm de passar para os racks. Porta do gabinete é de correr. '+
           'Armário (parede norte, a partir do canto direito, ≈3,3–3,5 m): profundidade por medir. '+
           'Janelas: só contam as que abrem, na parede nascente; posições por medir. A parede norte (F) não tem janelas. '+
