@@ -394,19 +394,19 @@ function estadoInicial(){
     layoutMode:'manual',
     /* Sala QC 23PT. Sul: R1/R2 a 1,10 m da parede sul (entrada) e R3/R4. Norte: R5–R9 encostadas à
        parede das janelas (x0 4,34), com 1,14 m livres até à parede do gabinete. O corredor R4–R5 tem
-       1,95 m porque o pilar P1 fica nele: a R5 começa 0,60 m acima do pilar para as frentes ficarem livres. */
+       2,15 m porque o pilar P1 fica nele: a R5 começa 0,60 m acima do pilar para as frentes ficarem livres. */
     rows:[
       {id:'R1', y:1.20,  x0:1.99, n:6, facing:'S', park:'new', a:rep('Galaxy II',6)},
       {id:'R2', y:2.00,  x0:1.99, n:6, facing:'N', park:'new', a:[...rep('Galaxy II',6)]},
       {id:'R3', y:3.90,  x0:1.28, n:7, facing:'S', park:'new', a:[null,...rep('Phantom II',6)]},
       {id:'R4', y:4.70,  x0:1.28, n:7, facing:'N', park:'new', a:[null,'Phantom',...rep('Shadow III',4),'PH Xtreme']},
-      {id:'R5', y:7.45,  x0:4.34, n:4, facing:'S', park:'new', a:rep('Starship II',4)},
-      {id:'R6', y:8.25,  x0:4.34, n:4, facing:'N', park:'new', a:['PH Xtreme','Starship Duo','PH Xtreme II','Galaxy II']},
-      {id:'R7', y:10.15, x0:4.34, n:4, facing:'S', park:'new', a:['Phantom','Phantom II','Auria Flat','SDM']},
-      {id:'R8', y:10.95, x0:4.34, n:4, facing:'N', park:'new', a:['Auria J Curve','Auria 3 monitores','Auria J Curve','Auria Flat']},
-      {id:'R9', y:12.85, x0:4.34, n:4, facing:'S', park:'new', a:[...rep('Auria J Inverted',2),...rep('Auria 3 monitores',2)]},
+      {id:'R5', y:7.65,  x0:4.34, n:4, facing:'S', park:'new', a:rep('Starship II',4)},
+      {id:'R6', y:8.45,  x0:4.34, n:4, facing:'N', park:'new', a:['PH Xtreme','Starship Duo','PH Xtreme II','Galaxy II']},
+      {id:'R7', y:10.35, x0:4.34, n:4, facing:'S', park:'new', a:['Phantom','Phantom II','Auria Flat','SDM']},
+      {id:'R8', y:11.15, x0:4.34, n:4, facing:'N', park:'new', a:['Auria J Curve','Auria 3 monitores','Auria J Curve','Auria Flat']},
+      {id:'R9', y:13.05, x0:4.34, n:4, facing:'S', park:'new', a:[...rep('Auria J Inverted',2),...rep('Auria 3 monitores',2)]},
       // costas com costas com a R9; recebe as Áurias que tinham sido cedidas
-      {id:'R10', y:13.65, x0:4.34, n:4, facing:'N', park:'new', a:['Auria J Curve','Auria Flat',...rep('Auria 2 monitores',2)]}
+      {id:'R10', y:13.85, x0:4.34, n:4, facing:'N', park:'new', a:['Auria J Curve','Auria Flat',...rep('Auria 2 monitores',2)]}
     ],
     soltas:[],
     work:{on:false, x0:0.00, y0:4.50, x1:2.20, y1:7.50},
@@ -429,7 +429,13 @@ function estadoInicial(){
     pilares:[{tipo:'c', x:5.41, y:6.62, d:0.38, prov:true}], caixas:[],
     /* Pontos de luz: pequenas caixas com electricidade, com t tomadas; contam para as
        tomadas da ilha mais próxima, tal como as caixas de pavimento. */
-    pontos:[],
+    // posições fixadas no plano, na ordem L1–L15
+    pontos:[
+      {x:7.68, y:16.80, t:4}, {x:7.60, y:16.10, t:4}, {x:5.55, y:4.70, t:4}, {x:6.50, y:8.45, t:4},
+      {x:5.05, y:8.50, t:4}, {x:6.50, y:11.10, t:4}, {x:5.05, y:11.15, t:4}, {x:6.45, y:13.65, t:4},
+      {x:5.10, y:13.65, t:4}, {x:4.10, y:2.00, t:4}, {x:5.55, y:1.95, t:4}, {x:2.65, y:4.65, t:4},
+      {x:4.10, y:4.65, t:4}, {x:2.70, y:2.00, t:4}, {x:4.85, y:16.15, t:4}
+    ],
     /* Gabinete no topo norte da parede poente (Q 10,87 = sala + gabinete), até à Parede 4 (x = 3,20).
        A planta dá T 3,36; com a Parede 5 medida em 3,20 fica 3,20 × 3,62 m. */
     gab:{x0:0.00, y0:7.65, x1:3.20, y1:11.27},
@@ -460,7 +466,7 @@ function estadoInicial(){
           '5 sul do gabinete E–F 3,20 (medida); 6 poente F–A 7,51 (medida). A parede das janelas faz ≈2,4° com a poente. '+
           'Base: planta do arquitecto QC 23PT (97 m²). Gabinete 3,20 × 3,62 m (a planta dá T 3,36), alinhado com a poente. '+
           'Porta exterior a 0,15–0,93 m do canto poente; porta do gabinete na parede sul dele, junto ao canto nascente. '+
-          'Filas reorganizadas para a sala nova: corredor R4–R5 com 1,95 m por causa do pilar P1 (provisório). '+
+          'Filas reorganizadas para a sala nova: corredor R4–R5 com 2,15 m por causa do pilar P1 (provisório). '+
           'Armário rodado ≈9° para ficar encostado à parede D–C, no canto com a parede das janelas. '+
           'Localização das 20 máquinas do parque existente não confirmada.'
   };
