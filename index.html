@@ -443,9 +443,10 @@ function estadoInicial(){
     pilares:[{tipo:'c', x:5.41, y:6.62, d:0.38, prov:true}], caixas:[],
     /* Pontos de luz: pequenas caixas com electricidade, com t tomadas; contam para as
        tomadas da ilha mais próxima, tal como as caixas de pavimento. */
-    /* Posições fixadas no plano, na ordem L1–L26. L16–L21 são luzes de teto (teto:true): só
+    /* Posições fixadas no plano, na ordem L1–L27. L16–L21 são luzes de teto (teto:true): só
        iluminação, não contam como tomadas para as ilhas. L12 e L24 são pontos de internet (net:true), também sem tomadas,
-       debaixo da mesa, tal como o L25 (tomadas); L26 é internet na bancada Smart top, ao lado do L15. L22–L23 junto ao canto sul-nascente. */
+       debaixo da mesa, tal como o L25 (tomadas); L26 é internet na bancada Smart top, ao lado do L15;
+       L27 é internet atrás do Rack 1, entre ele e a parede das janelas. L22–L23 junto ao canto sul-nascente. */
     pontos:[
       {x:7.68, y:16.80, t:4}, {x:7.60, y:16.10, t:4}, {x:6.35, y:4.65, t:4}, {x:6.50, y:8.45, t:4},
       {x:5.05, y:8.50, t:4}, {x:6.50, y:11.10, t:4}, {x:5.05, y:11.15, t:4}, {x:6.45, y:13.80, t:4},
@@ -455,7 +456,7 @@ function estadoInicial(){
       {x:5.35, y:0.15, t:0, teto:true}, {x:3.50, y:0.25, t:0, teto:true}, {x:1.70, y:0.25, t:0, teto:true},
       {x:6.70, y:0.20, t:4}, {x:6.70, y:0.55, t:4},
       {x:1.80, y:5.40, t:0, net:true}, {x:1.55, y:5.10, t:4},
-      {x:5.20, y:16.15, t:0, net:true}
+      {x:5.20, y:16.15, t:0, net:true}, {x:7.52, y:16.55, t:0, net:true}
     ],
     /* Gabinete no topo norte da parede poente (Q 10,87 = sala + gabinete), até à Parede 4 (x = 3,20).
        A planta dá T 3,36; com a Parede 5 medida em 3,20 fica 3,20 × 3,62 m. */
@@ -486,7 +487,7 @@ function estadoInicial(){
           '4 cadeiras de escritório, 2 de cada lado da mesa, com 0,70 × 0,70 m (provisório, por medir): a poente ficam a 0,12 m da parede; a nascente deixam 1,10 m de passagem até à R3/R4. '+
           'Bancada Smart top (1,80 × 0,55 m) fixa entre a R10 e o armário, ao lado dos racks. '+
           'A antiga R8 saiu: as suas 4 Áurias (2 J Curve, 3 monitores e Flat) são cedidas. '+
-          'Pontos de luz L1–L11, L13–L15, L22, L23 e L25 com 4 tomadas cada (L25 debaixo da mesa); L12 e L24 são pontos de internet (sem tomadas), debaixo da mesa; L26 é internet na bancada Smart top; L16–L21 são luzes de teto (L16–L18 junto à parede das janelas, '+
+          'Pontos de luz L1–L11, L13–L15, L22, L23 e L25 com 4 tomadas cada (L25 debaixo da mesa); L12 e L24 são pontos de internet (sem tomadas), debaixo da mesa; L26 é internet na bancada Smart top; L27 é internet atrás do Rack 1 (lado da parede das janelas); L16–L21 são luzes de teto (L16–L18 junto à parede das janelas, '+
           'L19–L21 junto à parede sul). '+
           'Paredes (cantos A–F a partir da porta exterior): 1 sul A–B 6,90; 2 janelas B–C 18,68 (medida); '+
           '3 norte C–D 4,54 (medida); 4 nascente do gabinete D–E 10,30 (medida); '+
