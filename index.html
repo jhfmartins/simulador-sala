@@ -122,6 +122,7 @@
       <span style="width:10px"></span>
       <label class="row" style="margin:0"><input type="checkbox" id="showGrid"> <span style="flex:none">grelha 1 m</span></label>
       <label class="row" style="margin:0"><input type="checkbox" id="showDims" checked> <span style="flex:none">cotas</span></label>
+      <label class="row" style="margin:0" title="distância de cada fila, móvel e bancada à parede mais próxima em cada direcção"><input type="checkbox" id="showParedes"> <span style="flex:none">às paredes</span></label>
       <label class="row" style="margin:0"><input type="checkbox" id="showLabels" checked> <span style="flex:none">etiquetas</span></label>
       <span style="margin-left:auto"></span>
       <button class="sm" id="expSvg">SVG</button>
@@ -506,7 +507,7 @@ let sel = null;                        // {rid, k}
 let selRow = null;                     // id de fila
 let cenarios = [];
 let zoom = null;                       // px por unidade de desenho (null = ajustar)
-const view = {grid:false, dims:true, labels:true};
+const view = {grid:false, dims:true, labels:true, paredes:false};
 let R = null;                          // resultado do último cálculo
 
 const r2 = v=>Math.round(v*100)/100;
@@ -530,6 +531,51 @@ function pilarCotas(p){
     for(let q=0.02;q<0.99;q+=0.02) if(!pointInPoly(cx+(fx-cx)*q, cy+(fy-cy)*q, POLY)) return;
     const meio = p.tipo==='c' ? p.d/2 : Math.abs(nx)*p.w/2+Math.abs(ny)*p.h/2;
     out.push({parede:PAREDES[k], eixo, face:eixo-meio, x0:cx+nx*meio, y0:cy+ny*meio, x1:fx, y1:fy, nx, ny});
+  });
+  return out;
+}
+/* Cotas às paredes de tudo o que está na sala: de cada lado de cada fila, máquina solta, móvel e
+   bancada sai um raio a meio da aresta, nos eixos da sala (como se mede com fita ao longo das filas).
+   Só se desenha quando o raio chega à parede sem bater noutra coisa, para não encher o plano. */
+function cotasParedes(){
+  const objs=[];
+  S.rows.forEach(r=>objs.push({nome:r.id, x0:r.x0, x1:r3(r.x0+rowLen(r)), y0:r.y, y1:r3(r.y+S.p.bayD)}));
+  R.bays.filter(b=>b.tipo==='solta').forEach(b=>objs.push({nome:nomeUnid(b), ...b.rc}));
+  S.moveis.forEach(mv=>objs.push({nome:mv.nome, ...movBB(mv), rot:!!mv.rot}));
+  if(S.bench.on) objs.push({nome:'Bancada', x0:S.bench.x0, x1:S.bench.x1, y0:S.bench.y0, y1:S.bench.y1});
+  const obst=[...objs, ...S.pilares.map(p=>p.tipo==='c' ? {x0:p.x-p.d/2,x1:p.x+p.d/2,y0:p.y-p.d/2,y1:p.y+p.d/2}
+                                                       : {x0:p.x,x1:p.x+p.w,y0:p.y,y1:p.y+p.h})];
+  // distância ao longo do raio (ox,oy)+t·(dx,dy) até à primeira parede do POLY
+  const parede=(ox,oy,dx,dy)=>{
+    let best=Infinity, k=-1;
+    POLY.forEach((a,i)=>{
+      const b=POLY[(i+1)%POLY.length], ex=b[0]-a[0], ey=b[1]-a[1], den=dx*ey-dy*ex;
+      if(Math.abs(den)<1e-12) return;
+      const t=((a[0]-ox)*ey-(a[1]-oy)*ex)/den, u=((a[0]-ox)*dy-(a[1]-oy)*dx)/den;
+      if(t>1e-6 && u>=-1e-9 && u<=1+1e-9 && t<best){ best=t; k=i; }
+    });
+    return {t:best, k};
+  };
+  // distância até ao primeiro obstáculo (rectângulo) atravessado pelo raio, sem contar o próprio objecto
+  const bate=(ox,oy,dx,dy,eu)=>{
+    let best=Infinity;
+    obst.forEach(o=>{
+      if(o===eu) return;
+      // a aresta conta como bater: um raio rente à junção de duas filas não passa entre elas
+      if(dx){ if(oy<o.y0-1e-6||oy>o.y1+1e-6) return; const t=dx>0?o.x0-ox:ox-o.x1; if(t>-1e-6 && t<best) best=t; }
+      else  { if(ox<o.x0-1e-6||ox>o.x1+1e-6) return; const t=dy>0?o.y0-oy:oy-o.y1; if(t>-1e-6 && t<best) best=t; }
+    });
+    return best;
+  };
+  const out=[];
+  objs.forEach(o=>{
+    if(o.rot) return;                    // móvel rodado: encosta a uma parede oblíqua, a cota em eixos não ajuda
+    const mx=(o.x0+o.x1)/2, my=(o.y0+o.y1)/2;
+    [[o.x0,my,-1,0],[o.x1,my,1,0],[mx,o.y0,0,-1],[mx,o.y1,0,1]].forEach(([ox,oy,dx,dy])=>{
+      const w=parede(ox,oy,dx,dy);
+      if(!isFinite(w.t) || w.t<0.005 || bate(ox,oy,dx,dy,o)<w.t-1e-6) return;
+      out.push({nome:o.nome, parede:PAREDES[w.k], d:w.t, x0:ox, y0:oy, x1:ox+dx*w.t, y1:oy+dy*w.t, dx, dy});
+    });
   });
   return out;
 }
@@ -1153,6 +1199,15 @@ function render(){
     POLY.forEach((p,k)=>{
       const dx=p[0]-cg[0], dy=p[1]-cg[1], d=Math.hypot(dx,dy)||1;
       o.push(txt(p[0]+dx/d*0.32, p[1]+dy/d*0.32-0.08, 'ABCDEF'[k], 3, '#0b57a4').replace('<text','<text font-weight="700" pointer-events="none"'));
+    });
+    // cotas de filas, móveis e bancada às paredes (opção «às paredes»)
+    if(view.paredes) cotasParedes().forEach(c=>{
+      const cor='#00796b', tx=c.dy*1.0, ty=c.dx*1.0;
+      o.push(`<line x1="${X(c.x0)}" y1="${Y(c.y0)}" x2="${X(c.x1)}" y2="${Y(c.y1)}" stroke="${cor}" stroke-width=".35" stroke-dasharray="1.2 .7" pointer-events="none"/>`);
+      [[c.x0,c.y0],[c.x1,c.y1]].forEach(([x,y])=>o.push(`<line x1="${X(x)-tx}" y1="${Y(y)-ty}" x2="${X(x)+tx}" y2="${Y(y)+ty}" stroke="${cor}" stroke-width=".35" pointer-events="none"/>`));
+      const mx=(c.x0+c.x1)/2, my=(c.y0+c.y1)/2+(c.dx?0.13:0), vert=!c.dx;
+      const lab=`<text ${vert?`transform="translate(${X(mx)-1},${Y(my)}) rotate(-90)"`:`x="${X(mx)}" y="${Y(my)+0.7}"`} text-anchor="middle" font-size="1.9" fill="${cor}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width=".7" pointer-events="none">${nf(c.d)}</text>`;
+      o.push(lab);
     });
     // cotas dos pilares às paredes (à face), para confirmar a posição em obra
     S.pilares.forEach(p=>pilarCotas(p).forEach(c=>{
@@ -2081,6 +2136,7 @@ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
 document.getElementById('colorMode').onchange=e=>{ S.colorMode=e.target.value; render(); renderLegend(); estadoGravacao(); };
 document.getElementById('showGrid').onchange=e=>{ view.grid=e.target.checked; render(); };
 document.getElementById('showDims').onchange=e=>{ view.dims=e.target.checked; render(); };
+document.getElementById('showParedes').onchange=e=>{ view.paredes=e.target.checked; if(e.target.checked && !view.dims){ view.dims=true; document.getElementById('showDims').checked=true; } render(); };
 document.getElementById('showLabels').onchange=e=>{ view.labels=e.target.checked; render(); };
 document.getElementById('zIn').onclick=()=>{ zoom*=1.25; applyZoom(); };
 document.getElementById('zOut').onclick=()=>{ zoom/=1.25; applyZoom(); };
