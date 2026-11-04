@@ -99,7 +99,7 @@
 <body>
 
 <header>
-  <h1>Simulador de implantação — sala 7,35 × 13,90 m</h1>
+  <h1>Simulador de implantação — sala QC 23PT (≈97 m²)</h1>
   <span id="modeChip" class="chip">bandas</span>
   <span id="saveChip" class="chip">—</span>
   <span id="saveMsg" style="color:var(--ink2);font-size:11.5px"></span>
@@ -310,17 +310,22 @@
    ========================================================================== */
 
 const M = 40/3;                       // unidades por metro
-const ROOM_W = 7.35, ROOM_H = 13.90;
-// parede do gabinete a 4,10 m da parede nascente (medido)
-const POLY = [[0,0],[7.35,0],[7.35,13.90],[3.25,13.90],[3.25,7.50],[0,7.50]];
+const ROOM_W = 7.68, ROOM_H = 18.66;        // envolvente; a sala não é rectangular
+/* Base: planta do arquitecto (QC 23PT, 97 m²), com as medidas corrigidas em obra. Cantos A–F a partir
+   da porta exterior: 1 sul A–B 6,90 · 2 janelas B–C 18,68 · 3 norte C–D 4,54 · 4 gabinete D–E 10,30
+   · 5 sul do gabinete E–F 3,20 · 6 poente F–A 7,51. Eixos alinhados com a poente; a parede
+   das janelas faz ≈2,4° com ela. */
+const POLY = [[0,0.14],[6.90,0],[7.68,18.66],[3.20,17.95],[3.20,7.65],[0,7.65]];
 const G = 0.05;                       // grelha de análise
 const GW = Math.round(ROOM_W/G), GH = Math.round(ROOM_H/G);   // 147 × 278
 
 const DOORS = [
-  {id:'ext', nome:'Porta exterior', tipo:'h', x0:0.49, x1:1.65, y:0.00,
-   clear:{x0:0.49,x1:1.65,y0:0.00,y1:1.10}, alvo:[1.07,0.10]},
-  {id:'gab', nome:'Porta do gabinete', tipo:'v', x:3.25, y0:7.50, y1:8.60,
-   clear:{x0:3.25,x1:4.35,y0:7.50,y1:8.60}, alvo:[3.35,8.05]}
+  // a parede sul é oblíqua nestes eixos (y 0,14 → 0); junto à porta fica em y ≈ 0,13
+  {id:'ext', nome:'Porta exterior', tipo:'h', x0:0.15, x1:0.93, y:0.13,
+   clear:{x0:0.15,x1:0.93,y0:0.13,y1:1.23}, alvo:[0.54,0.23]},
+  // na parede sul do gabinete, junto ao canto nascente; abre para a sala (sul)
+  {id:'gab', nome:'Porta do gabinete', tipo:'h', abre:'S', x0:2.42, x1:3.20, y:7.65,
+   clear:{x0:2.42,x1:3.20,y0:6.55,y1:7.65}, alvo:[2.81,7.55]}
 ];
 
 /* -------------------------------- inventário ----------------------------- */
@@ -386,40 +391,46 @@ function estadoInicial(){
   return {
     p:{ bayW:0.71, bayD:0.80, aisle:1.10, backGap:0.00, startGap:1.00, aisleMin:1.10,
         janelaFolga:1.10, tomadas:4 },
-    layoutMode:'bands',
-    /* R1/R2 passam de 8+8 para 6+6 e afastam-se 1,10 m da janela nascente; R3/R4 crescem
-       para poente, para a zona libertada pela antiga área de trabalho. */
+    layoutMode:'manual',
+    /* Sala QC 23PT. Sul: R1/R2 a 1,10 m da parede sul (entrada) e R3/R4. Norte: R5–R9 encostadas à
+       parede das janelas (x0 4,34), com 1,14 m livres até à parede do gabinete. O corredor R4–R5 tem
+       1,95 m porque o pilar P1 fica nele: a R5 começa 0,60 m acima do pilar para as frentes ficarem livres. */
     rows:[
-      {id:'R1', y:1.00,  x0:1.99, n:6, facing:'S', park:'new', a:rep('Galaxy II',6)},
-      {id:'R2', y:1.80,  x0:1.99, n:6, facing:'N', park:'new', a:[...rep('Galaxy II',6)]},
-      {id:'R3', y:3.70,  x0:1.28, n:7, facing:'S', park:'new', a:[...rep('Phantom II',7)]},
-      {id:'R4', y:4.50,  x0:1.28, n:7, facing:'N', park:'new', a:[...rep('Phantom',2),...rep('Shadow III',4),'PH Xtreme']},
-      {id:'R5', y:6.40,  x0:4.49, n:4, facing:'S', park:'new', a:rep('Starship II',4)},
-      {id:'R6', y:7.20,  x0:4.49, n:4, facing:'N', park:'new', a:['PH Xtreme','Starship Duo','PH Xtreme II','Galaxy II']},
-      {id:'R7', y:9.10,  x0:4.49, n:4, facing:'S', park:'new', a:[...rep('Auria 2 monitores',2),'Auria Flat','SDM']},
-      {id:'R8', y:9.90,  x0:4.49, n:4, facing:'N', park:'new', a:['Auria J Curve','Auria 3 monitores','Auria J Curve','Auria Flat']},
-      {id:'R9', y:11.80, x0:4.49, n:2, facing:'S', park:'new', a:['Auria J Inverted','Auria 3 monitores']}
+      {id:'R1', y:1.20,  x0:1.99, n:6, facing:'S', park:'new', a:rep('Galaxy II',6)},
+      {id:'R2', y:2.00,  x0:1.99, n:6, facing:'N', park:'new', a:[...rep('Galaxy II',6)]},
+      {id:'R3', y:3.90,  x0:1.28, n:7, facing:'S', park:'new', a:[...rep('Phantom II',7)]},
+      {id:'R4', y:4.70,  x0:1.28, n:7, facing:'N', park:'new', a:[...rep('Phantom',2),...rep('Shadow III',4),'PH Xtreme']},
+      {id:'R5', y:7.45,  x0:4.34, n:4, facing:'S', park:'new', a:rep('Starship II',4)},
+      {id:'R6', y:8.25,  x0:4.34, n:4, facing:'N', park:'new', a:['PH Xtreme','Starship Duo','PH Xtreme II','Galaxy II']},
+      {id:'R7', y:10.15, x0:4.34, n:4, facing:'S', park:'new', a:[...rep('Auria 2 monitores',2),'Auria Flat','SDM']},
+      {id:'R8', y:10.95, x0:4.34, n:4, facing:'N', park:'new', a:['Auria J Curve','Auria 3 monitores','Auria J Curve','Auria Flat']},
+      {id:'R9', y:12.85, x0:4.34, n:2, facing:'S', park:'new', a:['Auria J Inverted','Auria 3 monitores']}
     ],
     soltas:[],
-    work:{on:false, x0:0.00, y0:4.50, x1:3.25, y1:7.50},
-    bench:{on:true, x0:0.00, y0:1.20, x1:0.65, y1:3.20, frente:'E'},
+    work:{on:false, x0:0.00, y0:4.50, x1:2.20, y1:7.50},
+    bench:{on:true, x0:0.00, y0:1.50, x1:0.65, y1:3.50, frente:'E'},
     /* Mobiliário fixo: bloqueia a circulação e precisa de frente livre para se abrir. */
     moveis:[
-      {nome:'Armário', x0:4.02, y0:13.30, x1:7.35, y1:13.90, frente:'S'},
-      {nome:'Rack 1',  x0:6.13, y0:11.99, x1:6.74, y1:12.60, frente:'S'},
-      {nome:'Rack 2',  x0:6.74, y0:11.99, x1:7.35, y1:12.60, frente:'S'}
+      // a parede norte é oblíqua: o armário toca-a no canto poente e fica a 0,02 m da das janelas
+      {nome:'Armário', x0:4.29, y0:17.53, x1:7.62, y1:18.13, frente:'S'},
+      {nome:'Rack 1',  x0:6.17, y0:12.85, x1:6.78, y1:13.46, frente:'S'},
+      {nome:'Rack 2',  x0:6.78, y0:12.85, x1:7.39, y1:13.46, frente:'S'}
     ],
     /* Janelas: troço de parede (E/W ao longo de y, N/S ao longo de x) com faixa livre à frente. */
-    janelas:[{parede:'E', a0:0.00, a1:6.40}],
-    pilares:[{tipo:'r', x:2.00, y:7.20, w:0.30, h:0.30, prov:true}], caixas:[],
+    /* Só contam as janelas que abrem; as posições na parede nascente estão por medir. */
+    janelas:[],
+    /* Pilar da planta (círculo verde, Ø ≈0,38): face sul a W 11,81 da parede norte; centro a ≈1,77 m da
+       parede das janelas e ≈6,61 m da parede sul, medidos no desenho à escala da parede de 6,90 m. */
+    pilares:[{tipo:'c', x:5.41, y:6.62, d:0.38, prov:true}], caixas:[],
     /* Pontos de luz: pequenas caixas com electricidade, com t tomadas; contam para as
        tomadas da ilha mais próxima, tal como as caixas de pavimento. */
     pontos:[],
-    /* Gabinete 3,10 × 3,75 m, encostado à parede com a porta (x = 3,25). */
-    gab:{x0:0.15, y0:7.50, x1:3.25, y1:11.25},
+    /* Gabinete no topo norte da parede poente (Q 10,87 = sala + gabinete), até à Parede 4 (x = 3,20).
+       A planta dá T 3,36; com a Parede 5 medida em 3,20 fica 3,20 × 3,62 m. */
+    gab:{x0:0.00, y0:7.65, x1:3.20, y1:11.27},
     /* Mesas do gabinete. Em L: caixa w × h, braço horizontal com profundidade a,
        braço vertical com largura b; rot em quartos de volta (sentido horário), esp = espelhada. */
-    mesas:[{nome:'Mesa em L', tipo:'L', x:1.45, y:9.45, w:1.80, h:1.80, a:0.80, b:0.60, rot:0, esp:false}],
+    mesas:[{nome:'Mesa em L', tipo:'L', x:1.40, y:9.47, w:1.80, h:1.80, a:0.80, b:0.60, rot:0, esp:false}],
     exist:{incluir:false, fixas:true, n:20},
     /* Máquinas do inventário que saem da sala (cedidas a outra equipa): uma Áuria de cada configuração. */
     cedidas:{'Auria Flat':1, 'Auria J Curve':1, 'Auria J Inverted':1, 'Auria 3 monitores':1},
@@ -428,16 +439,22 @@ function estadoInicial(){
           'características). Percursos de evacuação por validar com Segurança. '+
           'Caixas de pavimento: 4 tomadas úteis por caixa (as ligadas ao gerador não contam); '+
           'acrescentar uma caixa por fila — posição das existentes por levantar. '+
-          'Pilar P1 em posição provisória — medir em obra. '+
+          'Pilar P1 (circular, Ø ≈0,38 m) da planta do arquitecto: face sul a W 11,81 m da parede norte; centro a '+
+          '≈1,77 m da parede das janelas e ≈6,61 m da parede sul (medidos no desenho) — confirmar em obra. '+
           '4 Áurias cedidas (uma Flat, J Curve, J Inverted e 3 monitores). '+
           'R10 retirada: PH Xtreme e Starship Duo passaram para a R6 e a SDM para a R7. Os 2 racks ficam ao lado '+
           'da R9, encostados à parede nascente; os cabos de rede que hoje saem pela parede de vidro '+
           'têm de passar para os racks. Porta do gabinete é de correr. '+
           'Armário (parede norte, a partir do canto direito, ≈3,3–3,5 m): profundidade por medir. '+
-          'Extensão das janelas na parede nascente por confirmar. '+
+          'Janelas: só contam as que abrem, na parede nascente; posições por medir. A parede norte (F) não tem janelas. '+
           'Bancada Smart top deslocada para a parede poente (o armário ocupa o topo). '+
-          'Medidas da sala tiradas a olho com o Rui — prever margem. '+
-          'Medido: 4,10 m da parede nascente até à parede da porta do gabinete (na zona da R6). '+
+          'Paredes (cantos A–F a partir da porta exterior): 1 sul A–B 6,90; 2 janelas B–C 18,68 (medida); '+
+          '3 norte C–D 4,54 (medida); 4 nascente do gabinete D–E 10,30 (medida); '+
+          '5 sul do gabinete E–F 3,20 (medida); 6 poente F–A 7,51 (medida). A parede das janelas faz ≈2,4° com a poente. '+
+          'Base: planta do arquitecto QC 23PT (97 m²). Gabinete 3,20 × 3,62 m (a planta dá T 3,36), alinhado com a poente. '+
+          'Porta exterior a 0,15–0,93 m do canto poente; porta do gabinete na parede sul dele, junto ao canto nascente. '+
+          'Filas reorganizadas para a sala nova: corredor R4–R5 com 1,95 m por causa do pilar P1 (provisório). '+
+          'Armário encostado à parede norte oblíqua (toca-a no canto poente). '+
           'Localização das 20 máquinas do parque existente não confirmada.'
   };
 }
@@ -695,6 +712,9 @@ function compute(){
     if(a<0.005) nome='Entrada / manobra';
     else if(mvN){ nome='Manobra / '+mvN.nome.toLowerCase(); tipo='manobra'; }
     else if(Math.abs(b-ROOM_H)<0.005) nome='Manobra / topo';
+    // com a parede norte oblíqua fica uma cunha atrás do móvel encostado a ela: não é passagem
+    const mvS=movCota.find(m=>Math.abs(m.y1-a)<0.005);
+    if(mvS && Math.abs(b-ROOM_H)<0.005){ nome='Atrás: '+mvS.nome.toLowerCase(); tipo='fundo'; }
     bandas.push({t:tipo, nome, med, y0:a, y1:b});
   }
 
@@ -960,7 +980,8 @@ function render(){
   DOORS.forEach(d=>{
     if(d.tipo==='h'){
       o.push(`<line x1="${X(d.x0)}" y1="${Y(d.y)}" x2="${X(d.x1)}" y2="${Y(d.y)}" stroke="#d2691e" stroke-width="2.2"/>`);
-      o.push(`<path d="M ${X(d.x0)} ${Y(d.y)} A ${(d.x1-d.x0)*M} ${(d.x1-d.x0)*M} 0 0 0 ${X(d.x0)} ${Y(d.y)-(d.x1-d.x0)*M}" fill="none" stroke="#d2691e" stroke-width=".4" stroke-dasharray="1.5 1"/>`);
+      const sg = d.abre==='S' ? -1 : 1, r=(d.x1-d.x0)*M;
+      o.push(`<path d="M ${X(d.x0)} ${Y(d.y)} A ${r} ${r} 0 0 ${sg>0?0:1} ${X(d.x0)} ${Y(d.y)-sg*r}" fill="none" stroke="#d2691e" stroke-width=".4" stroke-dasharray="1.5 1"/>`);
     }else{
       o.push(`<line x1="${X(d.x)}" y1="${Y(d.y0)}" x2="${X(d.x)}" y2="${Y(d.y1)}" stroke="#d2691e" stroke-width="2.2"/>`);
       o.push(`<path d="M ${X(d.x)} ${Y(d.y1)} A ${(d.y1-d.y0)*M} ${(d.y1-d.y0)*M} 0 0 1 ${X(d.x)+(d.y1-d.y0)*M} ${Y(d.y1)}" fill="none" stroke="#d2691e" stroke-width=".4" stroke-dasharray="1.5 1"/>`);
@@ -988,7 +1009,7 @@ function render(){
       [c.x0,c.x1].forEach(xx=>o.push(`<line x1="${X(xx)}" y1="${by-1.6}" x2="${X(xx)}" y2="${by+1.6}" stroke="#4a5158" stroke-width=".35"/>`));
       o.push(txtAbs((X(c.x0)+X(c.x1))/2, by+4.4, nf(c.med), 2.5, '#15181c'));
     });
-    o.push(txtAbs(X(ROOM_W/2), by+9.6, `total 7,35 m × 13,90 m  ·  ${nf(R.metr.areaUtil)} m² úteis  ·  escala 1:75`, 2.4, '#4a5158'));
+    o.push(txtAbs(X(ROOM_W/2), by+9.6, `envolvente ${nf(ROOM_W)} × ${nf(ROOM_H)} m  ·  ${nf(R.metr.areaUtil)} m² úteis  ·  escala 1:75`, 2.4, '#4a5158'));
   }
 
   const svg=document.getElementById('plan');
@@ -1383,7 +1404,7 @@ function renderRules(){
 
   S.rows.forEach(r=>{
     const res=r2(ROOM_W-rowEnd(r));
-    if(res<0) add('bad',`Fila ${r.id} excede a parede nascente`, `${nf(-res)} m além de x = 7,35.`);
+    if(res<0) add('bad',`Fila ${r.id} excede a parede nascente`, `${nf(-res)} m além de x = ${nf(ROOM_W)}.`);
   });
 
   document.getElementById('rules').innerHTML=li.join('');
@@ -1877,7 +1898,7 @@ function renderLegend(){
     `<div><span class="sw" style="background:${cor(k)}"></span>${esc(k)}</div>`).join('');
   const m=R.metr;
   document.getElementById('printHead').innerHTML =
-    `<b>Implantação de máquinas de jogo — sala 7,35 × 13,90 m (${nf(m.areaUtil)} m² úteis)</b> · escala 1:75 · `+
+    `<b>Implantação de máquinas de jogo — sala QC 23PT (${nf(m.areaUtil)} m² úteis)</b> · escala 1:75 · `+
     `baia ${nf(S.p.bayW)} × ${nf(S.p.bayD)} m · corredor ${nf(S.p.aisle)} m · `+
     `${m.nBays} unidades${S.soltas.length?` (${S.soltas.length} solta${S.soltas.length>1?'s':''})`:''} · `+
     `${m.colocadas} máquinas colocadas · ${m.porColocar} por colocar · `+
