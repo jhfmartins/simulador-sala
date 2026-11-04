@@ -398,11 +398,13 @@ function estadoInicial(){
     rows:[
       {id:'R1', y:1.20,  x0:1.99, n:6, facing:'S', park:'new', a:rep('Galaxy II',6)},
       {id:'R2', y:2.00,  x0:1.99, n:6, facing:'N', park:'new', a:[...rep('Galaxy II',6)]},
-      {id:'R3', y:3.90,  x0:1.99, n:6, facing:'S', park:'new', a:rep('Phantom II',6)},
-      {id:'R4', y:4.70,  x0:1.99, n:6, facing:'N', park:'new', a:['Phantom',...rep('Shadow III',4),'PH Xtreme']},
+      {id:'R3', y:3.90,  x0:3.41, n:4, facing:'S', park:'new', a:rep('Phantom II',4)},
+      {id:'R4', y:4.70,  x0:3.41, n:4, facing:'N', park:'new', a:[...rep('Shadow III',3),'PH Xtreme']},
       {id:'R5', y:7.65,  x0:4.34, n:4, facing:'S', park:'new', a:rep('Starship II',4)},
       {id:'R6', y:8.45,  x0:4.34, n:4, facing:'N', park:'new', a:['PH Xtreme','Starship Duo','PH Xtreme II','Galaxy II']},
       {id:'R7', y:10.35, x0:4.34, n:4, facing:'S', park:'new', a:['Phantom','Phantom II','Auria Flat','SDM']},
+      // costas com costas com a R7, no lugar da antiga R8; recebe as 2 baias poente da R3 e da R4
+      {id:'R8', y:11.15, x0:4.34, n:4, facing:'N', park:'new', a:['Phantom II','Phantom II','Phantom','Shadow III']},
       {id:'R9', y:13.05, x0:4.34, n:4, facing:'S', park:'new', a:[...rep('Auria J Inverted',2),...rep('Auria 3 monitores',2)]},
       // costas com costas com a R9; recebe as Áurias que tinham sido cedidas
       {id:'R10', y:13.85, x0:4.34, n:4, facing:'N', park:'new', a:['Auria J Curve','Auria Flat',...rep('Auria 2 monitores',2)]}
@@ -446,7 +448,7 @@ function estadoInicial(){
        braço vertical com largura b; rot em quartos de volta (sentido horário), esp = espelhada. */
     mesas:[],
     exist:{incluir:false, fixas:true, n:20},
-    /* Máquinas do inventário que saem da sala: as 4 Áurias da R8, que deixa de existir. */
+    /* Máquinas do inventário que saem da sala: as 4 Áurias da antiga R8. */
     cedidas:{'Auria J Curve':2, 'Auria 3 monitores':1, 'Auria Flat':1},
     colorMode:'model',
     notas:'Pendências: carga eléctrica e térmica por confirmar com Instalações (chapas de '+
@@ -459,12 +461,13 @@ function estadoInicial(){
           'a R9 passa a 4 baias (J Inverted e 3 monitores) e a R10 nova, costas com costas com ela, tem a J Curve e a Flat. '+
           'As 2 Auria 2 monitores passam da R7 para a R10 (4 baias); para a R7 vêm a Phantom e a Phantom II das baias '+
           'poente da R4 e da R3, que deixam de existir (R3 e R4 com 6 baias, alinhadas com a R1/R2). '+
+          'Depois, as 2 baias poente da R3 (2 Phantom II) e da R4 (Phantom e Shadow III) passam para uma R8 nova, costas com costas com a R7: R3 e R4 ficam com 4 baias, de x = 3,41 m (junto à R5 só cabiam 3, por causa da porta do gabinete). '+
           'Os 2 racks ficam um atrás do outro junto à parede das janelas, entre a R10 e o armário; os cabos de rede que hoje saem pela parede de vidro '+
           'têm de passar para os racks. Porta do gabinete é de correr. '+
           'Armário (parede norte, a partir do canto direito, ≈3,3–3,5 m): profundidade por medir. '+
           'Janelas: só contam as que abrem, na parede nascente; posições por medir. A parede norte (F) não tem janelas. '+
           'Bancada Smart top (1,80 × 0,55 m) fixa entre a R10 e o armário, ao lado dos racks. '+
-          'R8 retirada: as suas 4 Áurias (2 J Curve, 3 monitores e Flat) são cedidas. '+
+          'A antiga R8 saiu: as suas 4 Áurias (2 J Curve, 3 monitores e Flat) são cedidas. '+
           'Pontos de luz L1–L15, L22 e L23 com 4 tomadas cada; L16–L21 são luzes de teto (L16–L18 junto à parede das janelas, '+
           'L19–L21 junto à parede sul). '+
           'Paredes (cantos A–F a partir da porta exterior): 1 sul A–B 6,90; 2 janelas B–C 18,68 (medida); '+
