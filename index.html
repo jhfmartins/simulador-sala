@@ -429,12 +429,14 @@ function estadoInicial(){
     pilares:[{tipo:'c', x:5.41, y:6.62, d:0.38, prov:true}], caixas:[],
     /* Pontos de luz: pequenas caixas com electricidade, com t tomadas; contam para as
        tomadas da ilha mais próxima, tal como as caixas de pavimento. */
-    // posições fixadas no plano, na ordem L1–L15
+    /* Posições fixadas no plano, na ordem L1–L18. L16–L18 são luzes de teto (teto:true): só
+       iluminação, não contam como tomadas para as ilhas. */
     pontos:[
       {x:7.68, y:16.80, t:4}, {x:7.60, y:16.10, t:4}, {x:5.55, y:4.70, t:4}, {x:6.50, y:8.45, t:4},
-      {x:5.05, y:8.50, t:4}, {x:6.50, y:11.10, t:4}, {x:5.05, y:11.15, t:4}, {x:6.45, y:13.65, t:4},
-      {x:5.10, y:13.65, t:4}, {x:4.10, y:2.00, t:4}, {x:5.55, y:1.95, t:4}, {x:2.65, y:4.65, t:4},
-      {x:4.10, y:4.65, t:4}, {x:2.70, y:2.00, t:4}, {x:4.85, y:16.15, t:4}
+      {x:5.05, y:8.50, t:4}, {x:6.50, y:11.10, t:4}, {x:5.05, y:11.15, t:4}, {x:6.45, y:13.80, t:4},
+      {x:5.10, y:13.75, t:4}, {x:4.10, y:2.00, t:4}, {x:5.55, y:1.95, t:4}, {x:2.65, y:4.65, t:4},
+      {x:4.10, y:4.65, t:4}, {x:2.70, y:2.00, t:4}, {x:4.85, y:16.15, t:4},
+      {x:7.68, y:13.80, t:0, teto:true}, {x:7.68, y:11.15, t:0, teto:true}, {x:7.55, y:8.45, t:0, teto:true}
     ],
     /* Gabinete no topo norte da parede poente (Q 10,87 = sala + gabinete), até à Parede 4 (x = 3,20).
        A planta dá T 3,36; com a Parede 5 medida em 3,20 fica 3,20 × 3,62 m. */
@@ -461,6 +463,7 @@ function estadoInicial(){
           'Armário (parede norte, a partir do canto direito, ≈3,3–3,5 m): profundidade por medir. '+
           'Janelas: só contam as que abrem, na parede nascente; posições por medir. A parede norte (F) não tem janelas. '+
           'Bancada Smart top (1,80 × 0,55 m) fixa entre a R10 e o armário, ao lado dos racks. '+
+          'Pontos de luz L1–L15 com 4 tomadas cada; L16–L18 são luzes de teto, junto à parede das janelas. '+
           'Paredes (cantos A–F a partir da porta exterior): 1 sul A–B 6,90; 2 janelas B–C 18,68 (medida); '+
           '3 norte C–D 4,54 (medida); 4 nascente do gabinete D–E 10,30 (medida); '+
           '5 sul do gabinete E–F 3,20 (medida); 6 poente F–A 7,51 (medida). A parede das janelas faz ≈2,4° com a poente. '+
@@ -828,6 +831,7 @@ function compute(){
     if(best) best.caixas.push(i);
   });
   S.pontos.forEach((pt,i)=>{
+    if(pt.teto) return;                  // luz de teto: só iluminação, não dá tomadas às ilhas
     let best=null, bd=Infinity;
     grupos.forEach(g=>{ const d=distRect(pt.x,pt.y,g.bb); if(d<bd){ bd=d; best=g; } });
     if(best) best.pontos.push(i);
@@ -1027,6 +1031,16 @@ function render(){
 
   // pontos de luz: arrastam-se no plano
   S.pontos.forEach((pt,i)=>{
+    if(pt.teto){
+      // luz de teto: círculo com cruz, o símbolo habitual de ponto de luz no tecto
+      const cx=X(pt.x), cy=Y(pt.y), k=1.35;
+      o.push(`<g data-ponto="${i}" style="cursor:move">
+        <circle cx="${cx}" cy="${cy}" r="1.9" fill="#fff" stroke="#8a5a00" stroke-width=".5"/>
+        <path d="M ${cx-k} ${cy-k} L ${cx+k} ${cy+k} M ${cx-k} ${cy+k} L ${cx+k} ${cy-k}" stroke="#8a5a00" stroke-width=".5"/></g>`);
+      // etiqueta curta por cima do símbolo, para não tapar as baias ao lado
+      o.push(txt(pt.x,pt.y+0.30,'L'+(i+1)+' · teto',1.6,'#8a5a00').replace('<text','<text pointer-events="none"'));
+      return;
+    }
     o.push(`<g data-ponto="${i}" style="cursor:move">
       <circle cx="${X(pt.x)}" cy="${Y(pt.y)}" r="1.9" fill="#ffd54a" stroke="#8a5a00" stroke-width=".5"/>
       <path d="M ${X(pt.x)+0.35} ${Y(pt.y)-1.3} L ${X(pt.x)-0.7} ${Y(pt.y)+0.15} L ${X(pt.x)+0.1} ${Y(pt.y)+0.15}
@@ -1446,7 +1460,8 @@ function renderRules(){
   add(gf.length?'warn':'', `9 · Tomadas (${P.tomadas} úteis por caixa)`,
     gf.length ? `Faltam ${totF} caixa(s): `+gf.map(g=>`${g.nome} ${g.maq} máq. / ${g.cap} tomadas → +${g.faltamCaixas}`).join(' · ')+
       '. Ver aba Obstáculos → Propor caixas.'
-    : `Todas as ilhas com tomadas suficientes (${S.caixas.length} caixa(s), ${S.pontos.length} ponto(s) de luz).`);
+    : `Todas as ilhas com tomadas suficientes (${S.caixas.length} caixa(s), ${S.pontos.filter(p=>!p.teto).length} ponto(s) de luz`+
+      `${S.pontos.some(p=>p.teto)?`; ${S.pontos.filter(p=>p.teto).length} luz(es) de teto não contam`:''}).`);
 
   const gA=(S.gab.x1-S.gab.x0)*(S.gab.y1-S.gab.y0);
   const mm=S.mesas.filter((ms,i)=>R.mesas[i].fora||R.mesas[i].sobre);
@@ -1812,11 +1827,12 @@ function renderObst(){
       g.faltamCaixas?'+'+g.faltamCaixas:'—'}</td></tr>`).join('');
 
   document.getElementById('pontoTbl').innerHTML = S.pontos.length
-    ? `<tr><th>#</th><th class="n">x</th><th class="n">y</th><th class="n">tomadas</th><th>serve</th><th></th></tr>`+
+    ? `<tr><th>#</th><th>tipo</th><th class="n">x</th><th class="n">y</th><th class="n">tomadas</th><th>serve</th><th></th></tr>`+
       S.pontos.map((pt,i)=>`<tr data-i="${i}"><td>L${i+1}</td>
+        <td><button class="sm" data-a="tipo">${pt.teto?'Luz teto':'Tomadas'}</button></td>
         <td class="n"><input class="mini" data-f="x" value="${nf(pt.x)}"></td>
         <td class="n"><input class="mini" data-f="y" value="${nf(pt.y)}"></td>
-        <td class="n"><input class="mini" data-f="t" value="${pt.t}"></td>
+        <td class="n">${pt.teto?'—':`<input class="mini" data-f="t" value="${pt.t}">`}</td>
         <td>${esc((R.grupos.find(g=>g.pontos.includes(i))||{nome:'—'}).nome)}</td>
         <td><button class="sm" data-a="del">✕</button></td></tr>`).join('')
     : `<tr><td style="color:var(--ink2)">Sem pontos de luz.</td></tr>`;
@@ -1826,6 +1842,7 @@ function renderObst(){
       const v=parseFloat(String(i.value).replace(',','.')); if(isNaN(v)) return recalc();
       pt[i.dataset.f] = i.dataset.f==='t' ? Math.max(0,Math.round(v)) : r2(v); recalc();
     });
+    tr.querySelector('[data-a=tipo]').onclick=()=>{ if(pt.teto) delete pt.teto; else pt.teto=true; recalc(); };
     tr.querySelector('[data-a=del]').onclick=()=>{ S.pontos.splice(+tr.dataset.i,1); recalc(); };
   });
 
