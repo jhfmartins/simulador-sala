@@ -425,7 +425,14 @@ function estadoInicial(){
       /* Mesa de 4 lugares (2,80 × 1,60) no espaço livre a poente da R3/R4, na vertical (lado longo
          norte–sul), com 2 lugares de cada lado; posição escolhida no plano, recuada 3 cm para poente
          para não entrar no vão da porta do gabinete; 1,20 m de passagem até à R3/R4. */
-      {nome:'Mesa',    x0:0.82, y0:4.00, x1:2.42, y1:6.80, frente:'E'}
+      // frente a sul: os lados longos ficam ocupados pelas cadeiras
+      {nome:'Mesa',    x0:0.82, y0:4.00, x1:2.42, y1:6.80, frente:'S'},
+      /* 4 cadeiras de escritório, 2 de cada lado da mesa, a meio de cada metade do lado longo.
+         0,70 × 0,70 provisório (por medir); sem frente a verificar, só ocupam espaço. */
+      {nome:'Cadeira 1', x0:0.12, y0:4.35, x1:0.82, y1:5.05, frente:'', prov:true},
+      {nome:'Cadeira 2', x0:0.12, y0:5.75, x1:0.82, y1:6.45, frente:'', prov:true},
+      {nome:'Cadeira 3', x0:2.42, y0:4.35, x1:3.12, y1:5.05, frente:'', prov:true},
+      {nome:'Cadeira 4', x0:2.42, y0:5.75, x1:3.12, y1:6.45, frente:'', prov:true}
     ],
     /* Janelas: troço de parede (E/W ao longo de y, N/S ao longo de x) com faixa livre à frente. */
     /* Só contam as janelas que abrem; as posições na parede nascente estão por medir. */
@@ -472,6 +479,7 @@ function estadoInicial(){
           'Armário (parede norte, a partir do canto direito, ≈3,3–3,5 m): profundidade por medir. '+
           'Janelas: só contam as que abrem, na parede nascente; posições por medir. A parede norte (F) não tem janelas. '+
           'Mesa de 4 lugares (2,80 × 1,60 m) a poente da R3/R4, na vertical, de x = 0,82 a 2,42 e y = 4,00 a 6,80 (posição escolhida no plano, recuada 3 cm para livrar o vão da porta do gabinete); fica 1,20 m de passagem até à R3/R4. '+
+          '4 cadeiras de escritório, 2 de cada lado da mesa, com 0,70 × 0,70 m (provisório, por medir): a poente ficam a 0,12 m da parede; a nascente deixam 0,50 m até à R3/R4. '+
           'Bancada Smart top (1,80 × 0,55 m) fixa entre a R10 e o armário, ao lado dos racks. '+
           'A antiga R8 saiu: as suas 4 Áurias (2 J Curve, 3 monitores e Flat) são cedidas. '+
           'Pontos de luz L1–L11, L13–L15, L22 e L23 com 4 tomadas cada; L12 é ponto de internet (sem tomadas); L16–L21 são luzes de teto (L16–L18 junto à parede das janelas, '+
