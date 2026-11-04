@@ -220,6 +220,7 @@
           <button class="sm" id="addPilarR">+ pilar rectangular</button>
         </div>
         <table id="pilarTbl"></table>
+        <div id="pilarCotas" class="hint"></div>
         <p class="hint">As baias não podem sobrepor pilares.</p>
         <h2>Gabinete</h2>
         <div id="gabCtl"></div>
@@ -512,6 +513,25 @@ const r3 = v=>Math.round(v*1000)/1000;
 const nf = (v,d=2)=>v.toLocaleString('pt-PT',{minimumFractionDigits:d,maximumFractionDigits:d});
 
 /* --------------------------- geometria auxiliar -------------------------- */
+/* Cotas de um pilar às paredes: perpendicular do centro a cada parede do POLY, só quando o pé
+   cai dentro da parede e o traço fica todo dentro da sala (assim mede-se com fita em obra).
+   face = do contorno do pilar à parede; eixo = do centro. */
+const PAREDES = ['1 sul A–B','2 janelas B–C','3 norte C–D','4 gabinete D–E','5 sul do gabinete E–F','6 poente F–A'];
+function pilarCotas(p){
+  const cx = p.tipo==='c' ? p.x : p.x+p.w/2, cy = p.tipo==='c' ? p.y : p.y+p.h/2, out=[];
+  POLY.forEach((a,k)=>{
+    const b=POLY[(k+1)%POLY.length], dx=b[0]-a[0], dy=b[1]-a[1], L2=dx*dx+dy*dy;
+    const t=((cx-a[0])*dx+(cy-a[1])*dy)/L2;
+    if(t<0 || t>1) return;
+    const fx=a[0]+t*dx, fy=a[1]+t*dy, eixo=Math.hypot(fx-cx,fy-cy);
+    if(eixo<1e-6) return;
+    const nx=(fx-cx)/eixo, ny=(fy-cy)/eixo;
+    for(let q=0.02;q<0.99;q+=0.02) if(!pointInPoly(cx+(fx-cx)*q, cy+(fy-cy)*q, POLY)) return;
+    const meio = p.tipo==='c' ? p.d/2 : Math.abs(nx)*p.w/2+Math.abs(ny)*p.h/2;
+    out.push({parede:PAREDES[k], eixo, face:eixo-meio, x0:cx+nx*meio, y0:cy+ny*meio, x1:fx, y1:fy, nx, ny});
+  });
+  return out;
+}
 function pointInPoly(x,y,poly){
   let inside=false;
   for(let i=0,j=poly.length-1;i<poly.length;j=i++){
@@ -1127,6 +1147,14 @@ function render(){
       [c.x0,c.x1].forEach(xx=>o.push(`<line x1="${X(xx)}" y1="${by-1.6}" x2="${X(xx)}" y2="${by+1.6}" stroke="#4a5158" stroke-width=".35"/>`));
       o.push(txtAbs((X(c.x0)+X(c.x1))/2, by+4.4, nf(c.med), 2.5, '#15181c'));
     });
+    // cotas dos pilares às paredes (à face), para confirmar a posição em obra
+    S.pilares.forEach(p=>pilarCotas(p).forEach(c=>{
+      const cor='#6a1b9a', tx=-c.ny*1.2, ty=c.nx*1.2;       // tiques perpendiculares ao traço
+      o.push(`<line x1="${X(c.x0)}" y1="${Y(c.y0)}" x2="${X(c.x1)}" y2="${Y(c.y1)}" stroke="${cor}" stroke-width=".4" stroke-dasharray="1.4 .8" pointer-events="none"/>`);
+      [[c.x0,c.y0],[c.x1,c.y1]].forEach(([x,y])=>o.push(`<line x1="${X(x)-tx}" y1="${Y(y)+ty}" x2="${X(x)+tx}" y2="${Y(y)-ty}" stroke="${cor}" stroke-width=".4" pointer-events="none"/>`));
+      const mx=(c.x0+c.x1)/2+c.ny*0.14, my=(c.y0+c.y1)/2-c.nx*0.14;
+      o.push(txt(mx,my,nf(c.face),2.2,cor).replace('<text','<text pointer-events="none" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width=".8"'));
+    }));
     o.push(txtAbs(X(ROOM_W/2), by+9.6, `envolvente ${nf(ROOM_W)} × ${nf(ROOM_H)} m  ·  ${nf(R.metr.areaUtil)} m² úteis  ·  escala 1:75`, 2.4, '#4a5158'));
   }
 
@@ -1848,6 +1876,12 @@ function renderObst(){
     });
     tr.querySelector('[data-a=del]').onclick=()=>{ S.pilares.splice(+tr.dataset.i,1); recalc(); };
   });
+  document.getElementById('pilarCotas').innerHTML = S.pilares.map((p,i)=>{
+    const cs=pilarCotas(p);
+    return `<b>P${i+1} às paredes</b> (à face · ao eixo; também no plano com «cotas»):<br>`+
+      (cs.length ? cs.map(c=>`parede ${esc(c.parede)}: <b>${nf(c.face)} m</b> · ${nf(c.eixo)} m`).join('<br>')
+                 : 'nenhuma parede à vista em perpendicular.');
+  }).join('<br>');
   document.getElementById('boxTbl').innerHTML = S.caixas.length
     ? `<tr><th>#</th><th class="n">x</th><th class="n">y</th><th>estado</th><th>serve</th><th></th></tr>`+
       S.caixas.map((c,i)=>`<tr data-i="${i}"><td>C${i+1}</td>
