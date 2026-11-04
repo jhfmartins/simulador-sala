@@ -398,15 +398,15 @@ function estadoInicial(){
     rows:[
       {id:'R1', y:1.20,  x0:1.99, n:6, facing:'S', park:'new', a:rep('Galaxy II',6)},
       {id:'R2', y:2.00,  x0:1.99, n:6, facing:'N', park:'new', a:[...rep('Galaxy II',6)]},
-      {id:'R3', y:3.90,  x0:1.28, n:7, facing:'S', park:'new', a:[...rep('Phantom II',7)]},
-      {id:'R4', y:4.70,  x0:1.28, n:7, facing:'N', park:'new', a:[...rep('Phantom',2),...rep('Shadow III',4),'PH Xtreme']},
+      {id:'R3', y:3.90,  x0:1.28, n:7, facing:'S', park:'new', a:[null,...rep('Phantom II',6)]},
+      {id:'R4', y:4.70,  x0:1.28, n:7, facing:'N', park:'new', a:[null,'Phantom',...rep('Shadow III',4),'PH Xtreme']},
       {id:'R5', y:7.45,  x0:4.34, n:4, facing:'S', park:'new', a:rep('Starship II',4)},
       {id:'R6', y:8.25,  x0:4.34, n:4, facing:'N', park:'new', a:['PH Xtreme','Starship Duo','PH Xtreme II','Galaxy II']},
-      {id:'R7', y:10.15, x0:4.34, n:4, facing:'S', park:'new', a:[...rep('Auria 2 monitores',2),'Auria Flat','SDM']},
+      {id:'R7', y:10.15, x0:4.34, n:4, facing:'S', park:'new', a:['Phantom','Phantom II','Auria Flat','SDM']},
       {id:'R8', y:10.95, x0:4.34, n:4, facing:'N', park:'new', a:['Auria J Curve','Auria 3 monitores','Auria J Curve','Auria Flat']},
       {id:'R9', y:12.85, x0:4.34, n:4, facing:'S', park:'new', a:[...rep('Auria J Inverted',2),...rep('Auria 3 monitores',2)]},
       // costas com costas com a R9; recebe as Áurias que tinham sido cedidas
-      {id:'R10', y:13.65, x0:4.34, n:2, facing:'N', park:'new', a:['Auria J Curve','Auria Flat']}
+      {id:'R10', y:13.65, x0:4.34, n:4, facing:'N', park:'new', a:['Auria J Curve','Auria Flat',...rep('Auria 2 monitores',2)]}
     ],
     soltas:[],
     work:{on:false, x0:0.00, y0:4.50, x1:2.20, y1:7.50},
@@ -447,6 +447,8 @@ function estadoInicial(){
           '≈1,77 m da parede das janelas e ≈6,61 m da parede sul (medidos no desenho) — confirmar em obra. '+
           'As 4 Áurias que tinham sido cedidas (Flat, J Curve, J Inverted e 3 monitores) voltam à sala: '+
           'a R9 passa a 4 baias (J Inverted e 3 monitores) e a R10 nova, costas com costas com ela, tem a J Curve e a Flat. '+
+          'As 2 Auria 2 monitores passam da R7 para a R10 (4 baias); para a R7 vêm a Phantom e a Phantom II das baias '+
+          'poente da R4 e da R3, que ficam vazias. '+
           'Os 2 racks ficam um atrás do outro junto à parede das janelas, entre a R10 e o armário; os cabos de rede que hoje saem pela parede de vidro '+
           'têm de passar para os racks. Porta do gabinete é de correr. '+
           'Armário (parede norte, a partir do canto direito, ≈3,3–3,5 m): profundidade por medir. '+
