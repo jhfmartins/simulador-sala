@@ -232,8 +232,8 @@
         <h2>Mobiliário fixo</h2>
         <div class="bar"><button class="sm" id="addMovel">+ móvel</button></div>
         <table id="movTbl"></table>
-        <p class="hint">No plano: arrasta pelo interior para mover e pelo quadrado azul (canto
-        inferior direito) para redimensionar. «Frente» é o lado das portas — precisa de ≥ 0,60 m livres.</p>
+        <p class="hint">No plano: arrasta pelo interior para mover; as medidas mudam-se
+        nesta tabela. «Frente» é o lado das portas — precisa de ≥ 0,60 m livres.</p>
         <h2>Janelas</h2>
         <div class="bar"><button class="sm" id="addJanela">+ janela</button>
           <span style="align-self:center;color:var(--ink2)">faixa livre</span>
@@ -994,9 +994,9 @@ function render(){
     o.push(vert
       ? `<text transform="translate(${X(cx)+0.7},${Y(cy)}) rotate(-90)" text-anchor="middle" font-size="2" fill="#8a5a00">${esc(lab)}</text>`
       : txt(cx,cy,lab,2.0,'#8a5a00'));
-    o.push(handle(b.x1,b.y1,'bench'));
+    // sem pega de redimensionar: arrasta-se pelo interior; as medidas editam-se no painel
   }
-  // mobiliário fixo (armário, rack…) — arrasta-se pelo interior, redimensiona-se pelo canto
+  // mobiliário fixo (armário, rack…) — arrasta-se pelo interior; as medidas editam-se na tabela
   S.moveis.forEach((mv,i)=>{
     const rt = mv.rot ? ` transform="rotate(${-mv.rot} ${X((mv.x0+mv.x1)/2)} ${Y((mv.y0+mv.y1)/2)})"` : '';
     if(mv.cadeira){
@@ -1010,7 +1010,7 @@ function render(){
         <rect x="${-.95*k}" y="${-.9*k}" width="${.36*k}" height="${1.8*k}" rx="${.16*k}" fill="#b9ab98"/>
         <rect x="${-.45*k}" y="${-.98*k}" width="${.95*k}" height="${.22*k}" rx="${.1*k}" fill="#b9ab98"/>
         <rect x="${-.45*k}" y="${.76*k}" width="${.95*k}" height="${.22*k}" rx="${.1*k}" fill="#b9ab98"/></g>`);
-      return;                            // sem pega de redimensionar: tapava o desenho; mede-se na tabela
+      return;
     }
     o.push(rect(mv,'#e4ddd3','#5b4a36',.6,null,`data-move="mov:${i}" style="cursor:move"${rt}`));
     const vert=(mv.y1-mv.y0)>(mv.x1-mv.x0), cx=(mv.x0+mv.x1)/2, cy=(mv.y0+mv.y1)/2;
@@ -1019,8 +1019,7 @@ function render(){
     o.push(vert
       ? `<text transform="translate(${X(cx)+0.7},${Y(cy)}) rotate(-90)" text-anchor="middle" font-size="1.9" fill="#5b4a36" pointer-events="none">${esc(lab)}</text>`
       : txt(cx,cy,lab,1.9,'#5b4a36').replace('<text','<text pointer-events="none"'+rt));
-    // o canto de redimensionar trabalha em eixos da sala: num móvel rodado edita-se na tabela
-    if(!mv.rot) o.push(handle(mv.x1,mv.y0,'mov:'+i));
+    // sem pega de redimensionar (tapava o desenho): arrasta-se pelo interior; as medidas editam-se na tabela
   });
   // janelas e respectiva faixa de acesso
   R.janelas.forEach(jn=>{
