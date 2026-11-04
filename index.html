@@ -323,9 +323,10 @@ const DOORS = [
   // a parede sul é oblíqua nestes eixos (y 0,14 → 0); junto à porta fica em y ≈ 0,13
   {id:'ext', nome:'Porta exterior', tipo:'h', x0:0.15, x1:0.93, y:0.13,
    clear:{x0:0.15,x1:0.93,y0:0.13,y1:1.23}, alvo:[0.54,0.23]},
-  // na parede sul do gabinete, junto ao canto nascente; abre para a sala (sul)
-  {id:'gab', nome:'Porta do gabinete', tipo:'h', abre:'S', x0:2.42, x1:3.20, y:7.65,
-   clear:{x0:2.42,x1:3.20,y0:6.55,y1:7.65}, alvo:[2.81,7.55]}
+  /* na parede nascente do gabinete, em frente ao topo poente da R5 (mesma faixa em y);
+     o vão de 1,10 m ocupa o corredor de 1,14 m entre o gabinete e a R5 */
+  {id:'gab', nome:'Porta do gabinete', tipo:'v', x:3.20, y0:7.66, y1:8.44,
+   clear:{x0:3.20,x1:4.30,y0:7.66,y1:8.44}, alvo:[3.30,8.05]}
 ];
 
 /* -------------------------------- inventário ----------------------------- */
@@ -423,8 +424,7 @@ function estadoInicial(){
       {nome:'Rack 1',  x0:6.82, y0:16.40, x1:7.43, y1:17.01, frente:'W'},
       {nome:'Rack 2',  x0:6.73, y0:15.70, x1:7.34, y1:16.31, frente:'S'},
       /* Mesa de 4 lugares (2,80 × 1,60) no espaço livre a poente da R3/R4, na vertical (lado longo
-         norte–sul), com 2 lugares de cada lado; posição escolhida no plano, recuada 3 cm para poente
-         para não entrar no vão da porta do gabinete; 1,80 m até à R3/R4. */
+         norte–sul), com 2 lugares de cada lado; posição escolhida no plano; 1,80 m até à R3/R4. */
       // frente a sul: os lados longos ficam ocupados pelas cadeiras
       {nome:'Mesa',    x0:0.82, y0:4.05, x1:2.42, y1:6.85, frente:'S'},
       /* 4 cadeiras de escritório, 2 de cada lado da mesa, a meio de cada metade do lado longo.
@@ -482,7 +482,7 @@ function estadoInicial(){
           'têm de passar para os racks. Porta do gabinete é de correr. '+
           'Armário (parede norte, a partir do canto direito, ≈3,3–3,5 m): profundidade por medir. '+
           'Janelas: só contam as que abrem, na parede nascente; posições por medir. A parede norte (F) não tem janelas. '+
-          'Mesa de 4 lugares (2,80 × 1,60 m) a poente da R3/R4, na vertical, de x = 0,82 a 2,42 e y = 4,05 a 6,85 (posição escolhida no plano, recuada 3 cm para livrar o vão da porta do gabinete); fica 1,80 m até à R3/R4. '+
+          'Mesa de 4 lugares (2,80 × 1,60 m) a poente da R3/R4, na vertical, de x = 0,82 a 2,42 e y = 4,05 a 6,85 (posição escolhida no plano); fica 1,80 m até à R3/R4. '+
           '4 cadeiras de escritório, 2 de cada lado da mesa, com 0,70 × 0,70 m (provisório, por medir): a poente ficam a 0,12 m da parede; a nascente deixam 1,10 m de passagem até à R3/R4. '+
           'Bancada Smart top (1,80 × 0,55 m) fixa entre a R10 e o armário, ao lado dos racks. '+
           'A antiga R8 saiu: as suas 4 Áurias (2 J Curve, 3 monitores e Flat) são cedidas. '+
@@ -492,7 +492,7 @@ function estadoInicial(){
           '3 norte C–D 4,54 (medida); 4 nascente do gabinete D–E 10,30 (medida); '+
           '5 sul do gabinete E–F 3,20 (medida); 6 poente F–A 7,51 (medida). A parede das janelas faz ≈2,4° com a poente. '+
           'Base: planta do arquitecto QC 23PT (97 m²). Gabinete 3,20 × 3,62 m (a planta dá T 3,36), alinhado com a poente. '+
-          'Porta exterior a 0,15–0,93 m do canto poente; porta do gabinete na parede sul dele, junto ao canto nascente. '+
+          'Porta exterior a 0,15–0,93 m do canto poente; porta do gabinete na parede nascente dele, em frente à R5 (y 7,66–8,44). '+
           'Filas reorganizadas para a sala nova: corredor R4–R5 com 2,15 m por causa do pilar P1 (provisório). '+
           'Armário rodado ≈9° para ficar encostado à parede D–C, no canto com a parede das janelas. '+
           'Localização das 20 máquinas do parque existente não confirmada.'
