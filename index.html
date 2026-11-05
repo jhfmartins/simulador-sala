@@ -447,7 +447,7 @@ function estadoInicial(){
     /* Pontos de luz: pequenas caixas com electricidade, com t tomadas; contam para as
        tomadas da ilha mais próxima, tal como as caixas de pavimento. */
     /* Posições fixadas no plano, na ordem L1–L33. L16–L21 eram luzes de teto e passaram a
-       energia e rede no teto (etiq:'Teto' só acrescenta o texto à etiqueta) (L16–L18 junto à parede das janelas, L19–L21 junto à parede sul). L12 e L24 são pontos de internet (net:true), também sem tomadas,
+       energia e rede no teto (noTeto:true muda o símbolo; etiq:'Teto' acrescenta o texto à etiqueta) (L16–L18 junto à parede das janelas, L19–L21 junto à parede sul). L12 e L24 são pontos de internet (net:true), também sem tomadas,
        debaixo da mesa, tal como o L25 (tomadas); L26 é internet na bancada Smart top, ao lado do L15;
        L27 é internet atrás do Rack 1, entre ele e a parede das janelas. L22–L23 junto ao canto sul-nascente.
        L28–L33 acrescentados no plano. rede:true = energia e rede (4 tomadas e ligação de rede no mesmo ponto). */
@@ -457,8 +457,8 @@ function estadoInicial(){
       {x:5.05, y:11.15, t:4, rede:true}, {x:6.45, y:13.80, t:4, rede:true}, {x:5.05, y:13.85, t:4, rede:true},
       {x:4.85, y:2.00, t:4, rede:true}, {x:5.55, y:1.95, t:4, rede:true}, {x:1.45, y:5.40, t:0, net:true},
       {x:4.95, y:4.70, t:4, rede:true}, {x:2.70, y:2.00, t:4, rede:true}, {x:4.85, y:16.15, t:4, rede:true},
-      {x:7.68, y:13.80, t:4, rede:true, etiq:'Teto'}, {x:7.68, y:11.15, t:4, rede:true, etiq:'Teto'}, {x:7.55, y:8.45, t:4, rede:true, etiq:'Teto'},
-      {x:5.35, y:0.15, t:4, rede:true, etiq:'Teto'}, {x:3.50, y:0.25, t:4, rede:true, etiq:'Teto'}, {x:1.70, y:0.25, t:4, rede:true, etiq:'Teto'},
+      {x:7.68, y:13.80, t:2, rede:true, noTeto:true, etiq:'Teto'}, {x:7.68, y:11.15, t:2, rede:true, noTeto:true, etiq:'Teto'}, {x:7.55, y:8.45, t:2, rede:true, noTeto:true, etiq:'Teto'},
+      {x:5.35, y:0.15, t:2, rede:true, noTeto:true, etiq:'Teto'}, {x:3.50, y:0.25, t:2, rede:true, noTeto:true, etiq:'Teto'}, {x:1.70, y:0.25, t:2, rede:true, noTeto:true, etiq:'Teto'},
       {x:6.70, y:0.20, t:4, rede:true}, {x:6.70, y:0.55, t:4, rede:true}, {x:1.80, y:5.40, t:0, net:true},
       {x:1.60, y:5.00, t:4, rede:true}, {x:5.20, y:16.15, t:0, net:true}, {x:7.52, y:16.55, t:0, net:true},
       {x:1.60, y:5.75, t:4, rede:true}, {x:5.75, y:8.45, t:4, rede:true}, {x:5.75, y:11.15, t:4, rede:true},
@@ -493,7 +493,7 @@ function estadoInicial(){
           '4 cadeiras de escritório, 2 de cada lado da mesa, com 0,70 × 0,70 m (provisório, por medir): a poente ficam a 0,12 m da parede; a nascente deixam 1,10 m de passagem até à R3/R4. '+
           'Bancada Smart top (1,80 × 0,55 m) fixa entre a R10 e o armário, ao lado dos racks. '+
           'A antiga R8 saiu: as suas 4 Áurias (2 J Curve, 3 monitores e Flat) são cedidas. '+
-          'Pontos de luz L1–L11, L13–L23, L25 e L28–L33 com 4 tomadas cada (L25 e L28 debaixo da mesa); energia e rede (tomadas + rede) em L3–L11, L13–L23, L25 e L28–L33 — só L1 e L2 ficam só com tomadas; L12 e L24 são pontos de internet (sem tomadas), debaixo da mesa; L26 é internet na bancada Smart top; L27 é internet atrás do Rack 1 (lado da parede das janelas); L16–L21 deixaram de ser luzes de teto e passaram a energia e rede (L16–L18 junto à parede das janelas, '+
+          'Pontos de luz L1–L11, L13–L15, L22, L23, L25 e L28–L33 com 4 tomadas cada; L16–L21 (teto) com 2 tomadas e 2 cabos de rede para o Rack 1 (L25 e L28 debaixo da mesa); energia e rede (tomadas + rede) em L3–L11, L13–L23, L25 e L28–L33 — só L1 e L2 ficam só com tomadas; L12 e L24 são pontos de internet (sem tomadas), debaixo da mesa; L26 é internet na bancada Smart top; L27 é internet atrás do Rack 1 (lado da parede das janelas); L16–L21 deixaram de ser luzes de teto e passaram a energia e rede (L16–L18 junto à parede das janelas, '+
           'L19–L21 junto à parede sul). '+
           'Paredes (cantos A–F a partir da porta exterior): 1 sul A–B 6,90; 2 janelas B–C 18,68 (medida); '+
           '3 norte C–D 4,56 (medida 4,54; ajustada ao alinhar a parede sul); 1 sul A–B perpendicular à poente e paralela às filas (cantos B e C subidos 14 cm); 4 nascente do gabinete D–E 10,30 (medida); '+
@@ -1151,7 +1151,7 @@ function render(){
       return;
     }
     if(pt.rede){
-      g(symRede(cx,cy));
+      g(pt.noTeto ? symRedeTeto(cx,cy) : symRede(cx,cy));
       // etiq: texto extra ao lado do número (p. ex. «Teto» para os pontos montados no tecto)
       // junto à margem nascente a etiqueta sobe para cima do símbolo: à direita ficava cortada e à
       // esquerda tapava as baias das filas
@@ -1168,7 +1168,8 @@ function render(){
      também nas exportações e na impressão. Só entram os tipos que existem no plano. */
   {
     const tipos=[
-      ['rede', p=>p.rede,                      symRede,    LIG_LEG.rede],
+      ['rede', p=>p.rede&&!p.noTeto,           symRede,    LIG_LEG.rede],
+      ['redeT',p=>p.rede&&p.noTeto,            symRedeTeto,LIG_LEG.redeTeto],
       ['net',  p=>p.net,                       symNet,     LIG_LEG.net],
       ['tom',  p=>!p.rede&&!p.net&&!p.teto,    symTomadas, LIG_LEG.tom],
       ['teto', p=>p.teto,                      symTeto,    LIG_LEG.teto]
@@ -1335,6 +1336,19 @@ function symRede(cx,cy){
     <path d="M ${cx-1.0} ${cy-1.3} L ${cx-1.75} ${cy+0.15} L ${cx-1.15} ${cy+0.15} L ${cx-1.45} ${cy+1.3} L ${cx-0.45} ${cy-0.15} L ${cx-1.05} ${cy-0.15} Z" fill="#8a5a00"/>
     <path d="M ${cx+1.1} ${cy-1.15} V ${cy+0.1} M ${cx+0.45} ${cy+1.15} V ${cy+0.1} H ${cx+1.75} V ${cy+1.15}" fill="none" stroke="#1d4e79" stroke-width=".4"/>`;
 }
+/* energia e rede no teto: círculo partido ao meio (raio amarelo | rede azul) dentro de um anel
+   tracejado, a convenção para o que está montado no tecto; redondo para não se confundir com a
+   pastilha rectangular dos pontos de pavimento/parede */
+function symRedeTeto(cx,cy){
+  const r=2.1;
+  return `<circle cx="${cx}" cy="${cy}" r="3" fill="#fff" stroke="#5b4a36" stroke-width=".35" stroke-dasharray="1 .6"/>
+    <path d="M ${cx} ${cy-r} A ${r} ${r} 0 0 0 ${cx} ${cy+r} Z" fill="#ffd54a"/>
+    <path d="M ${cx} ${cy-r} A ${r} ${r} 0 0 1 ${cx} ${cy+r} Z" fill="#e3eefa"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#5b4a36" stroke-width=".5"/>
+    <line x1="${cx}" y1="${cy-r}" x2="${cx}" y2="${cy+r}" stroke="#5b4a36" stroke-width=".3"/>
+    <path d="M ${cx-0.75} ${cy-1.25} L ${cx-1.5} ${cy+0.15} L ${cx-0.95} ${cy+0.15} L ${cx-1.2} ${cy+1.25} L ${cx-0.3} ${cy-0.15} L ${cx-0.85} ${cy-0.15} Z" fill="#8a5a00"/>
+    <path d="M ${cx+0.95} ${cy-1.1} V ${cy+0.05} M ${cx+0.4} ${cy+1.05} V ${cy+0.05} H ${cx+1.5} V ${cy+1.05}" fill="none" stroke="#1d4e79" stroke-width=".38"/>`;
+}
 // só internet: tomada RJ45 vista de frente, hexágono azul-escuro com a boca da ficha a branco
 function symNet(cx,cy){
   const R6=2.1, hex=[0,1,2,3,4,5].map(k=>{ const a=Math.PI/6+k*Math.PI/3; return `${r3(cx+R6*Math.cos(a))},${r3(cy+R6*Math.sin(a))}`; }).join(' ');
@@ -1351,6 +1365,7 @@ function symTeto(cx,cy){
 /* Texto da legenda de cada tipo de ponto (uma entrada por linha), tal como pedido para a obra. */
 const LIG_LEG = {
   rede: ['4 tomadas sem gerador +', '8 cabos de rede para rack 1'],
+  redeTeto: ['No teto:', '2 tomadas sem gerador +', '2 cabos de rede para rack 1'],
   net:  ['3 cabos com internet'],
   tom:  ['4 tomadas sem gerador'],
   teto: ['Luz de teto']
@@ -2038,7 +2053,7 @@ function renderObst(){
   document.getElementById('pontoTbl').innerHTML = S.pontos.length
     ? `<tr><th>#</th><th>tipo</th><th class="n">x</th><th class="n">y</th><th class="n">tomadas</th><th>serve</th><th></th></tr>`+
       S.pontos.map((pt,i)=>`<tr data-i="${i}"><td>L${i+1}</td>
-        <td><button class="sm" data-a="tipo">${pt.teto?'Luz teto':pt.net?'Internet':pt.rede?'Energia e rede':'Tomadas'}</button></td>
+        <td><button class="sm" data-a="tipo">${pt.teto?'Luz teto':pt.net?'Internet':pt.rede?(pt.noTeto?'Energia e rede · teto':'Energia e rede'):'Tomadas'}</button></td>
         <td class="n"><input class="mini" data-f="x" value="${nf(pt.x)}"></td>
         <td class="n"><input class="mini" data-f="y" value="${nf(pt.y)}"></td>
         <td class="n">${pt.teto||pt.net?'—':`<input class="mini" data-f="t" value="${pt.t}">`}</td>
