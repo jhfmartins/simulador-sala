@@ -446,20 +446,23 @@ function estadoInicial(){
     pilares:[{tipo:'c', x:5.41, y:6.62, d:0.38, prov:true}], caixas:[],
     /* Pontos de luz: pequenas caixas com electricidade, com t tomadas; contam para as
        tomadas da ilha mais próxima, tal como as caixas de pavimento. */
-    /* Posições fixadas no plano, na ordem L1–L27. L16–L21 são luzes de teto (teto:true): só
+    /* Posições fixadas no plano, na ordem L1–L33. L16–L21 são luzes de teto (teto:true): só
        iluminação, não contam como tomadas para as ilhas. L12 e L24 são pontos de internet (net:true), também sem tomadas,
        debaixo da mesa, tal como o L25 (tomadas); L26 é internet na bancada Smart top, ao lado do L15;
-       L27 é internet atrás do Rack 1, entre ele e a parede das janelas. L22–L23 junto ao canto sul-nascente. */
+       L27 é internet atrás do Rack 1, entre ele e a parede das janelas. L22–L23 junto ao canto sul-nascente.
+       L28–L33 acrescentados no plano. rede:true = energia e rede (4 tomadas e ligação de rede no mesmo ponto). */
     pontos:[
-      {x:7.68, y:16.80, t:4}, {x:7.60, y:16.10, t:4}, {x:6.35, y:4.65, t:4}, {x:6.50, y:8.45, t:4},
-      {x:5.05, y:8.50, t:4}, {x:6.50, y:11.10, t:4}, {x:5.05, y:11.15, t:4}, {x:6.45, y:13.80, t:4},
-      {x:5.05, y:13.85, t:4}, {x:4.10, y:2.00, t:4}, {x:5.55, y:1.95, t:4}, {x:1.45, y:5.40, t:0, net:true},
-      {x:4.95, y:4.75, t:4}, {x:2.70, y:2.00, t:4}, {x:4.85, y:16.15, t:4},
+      {x:7.68, y:16.80, t:4}, {x:7.60, y:16.10, t:4}, {x:6.35, y:4.65, t:4, rede:true},
+      {x:6.50, y:8.45, t:4, rede:true}, {x:5.05, y:8.40, t:4}, {x:6.50, y:11.10, t:4, rede:true},
+      {x:5.05, y:11.15, t:4, rede:true}, {x:6.45, y:13.80, t:4, rede:true}, {x:5.05, y:13.85, t:4, rede:true},
+      {x:4.85, y:2.00, t:4, rede:true}, {x:5.55, y:1.95, t:4, rede:true}, {x:1.45, y:5.40, t:0, net:true},
+      {x:4.95, y:4.70, t:4, rede:true}, {x:2.70, y:2.00, t:4, rede:true}, {x:4.85, y:16.15, t:4, rede:true},
       {x:7.68, y:13.80, t:0, teto:true}, {x:7.68, y:11.15, t:0, teto:true}, {x:7.55, y:8.45, t:0, teto:true},
       {x:5.35, y:0.15, t:0, teto:true}, {x:3.50, y:0.25, t:0, teto:true}, {x:1.70, y:0.25, t:0, teto:true},
-      {x:6.70, y:0.20, t:4}, {x:6.70, y:0.55, t:4},
-      {x:1.80, y:5.40, t:0, net:true}, {x:1.55, y:5.10, t:4},
-      {x:5.20, y:16.15, t:0, net:true}, {x:7.52, y:16.55, t:0, net:true}
+      {x:6.70, y:0.20, t:4, rede:true}, {x:6.70, y:0.55, t:4, rede:true}, {x:1.80, y:5.40, t:0, net:true},
+      {x:1.60, y:5.00, t:4, rede:true}, {x:5.20, y:16.15, t:0, net:true}, {x:7.52, y:16.55, t:0, net:true},
+      {x:1.60, y:5.75, t:4, rede:true}, {x:5.75, y:8.45, t:4, rede:true}, {x:5.75, y:11.15, t:4, rede:true},
+      {x:5.80, y:13.80, t:4, rede:true}, {x:5.65, y:4.70, t:4, rede:true}, {x:3.40, y:2.00, t:4, rede:true}
     ],
     /* Gabinete no topo norte da parede poente (Q 10,87 = sala + gabinete), até à Parede 4 (x = 3,20).
        A planta dá T 3,36; com a Parede 5 medida em 3,20 fica 3,20 × 3,62 m. */
@@ -490,7 +493,7 @@ function estadoInicial(){
           '4 cadeiras de escritório, 2 de cada lado da mesa, com 0,70 × 0,70 m (provisório, por medir): a poente ficam a 0,12 m da parede; a nascente deixam 1,10 m de passagem até à R3/R4. '+
           'Bancada Smart top (1,80 × 0,55 m) fixa entre a R10 e o armário, ao lado dos racks. '+
           'A antiga R8 saiu: as suas 4 Áurias (2 J Curve, 3 monitores e Flat) são cedidas. '+
-          'Pontos de luz L1–L11, L13–L15, L22, L23 e L25 com 4 tomadas cada (L25 debaixo da mesa); L12 e L24 são pontos de internet (sem tomadas), debaixo da mesa; L26 é internet na bancada Smart top; L27 é internet atrás do Rack 1 (lado da parede das janelas); L16–L21 são luzes de teto (L16–L18 junto à parede das janelas, '+
+          'Pontos de luz L1–L11, L13–L15, L22, L23, L25 e L28–L33 com 4 tomadas cada (L25 e L28 debaixo da mesa); energia e rede (tomadas + rede) em L3, L4, L6–L11, L13–L15, L22, L23, L25 e L28–L33 — só L1, L2 e L5 ficam só com tomadas; L12 e L24 são pontos de internet (sem tomadas), debaixo da mesa; L26 é internet na bancada Smart top; L27 é internet atrás do Rack 1 (lado da parede das janelas); L16–L21 são luzes de teto (L16–L18 junto à parede das janelas, '+
           'L19–L21 junto à parede sul). '+
           'Paredes (cantos A–F a partir da porta exterior): 1 sul A–B 6,90; 2 janelas B–C 18,68 (medida); '+
           '3 norte C–D 4,56 (medida 4,54; ajustada ao alinhar a parede sul); 1 sul A–B perpendicular à poente e paralela às filas (cantos B e C subidos 14 cm); 4 nascente do gabinete D–E 10,30 (medida); '+
@@ -1146,12 +1149,29 @@ function render(){
       return;
     }
     if(pt.net){
-      // ponto de internet (rede): quadrado azul com três ligações, para não se confundir com luz
-      const cx=X(pt.x), cy=Y(pt.y);
+      /* ponto de internet (só rede): tomada RJ45 vista de frente — hexágono azul-escuro cheio com a
+         boca da ficha a branco, para não se confundir com a pastilha de energia e rede */
+      const cx=X(pt.x), cy=Y(pt.y), R6=2.1;
+      const hex=[0,1,2,3,4,5].map(k=>{ const a=Math.PI/6+k*Math.PI/3; return `${r3(cx+R6*Math.cos(a))},${r3(cy+R6*Math.sin(a))}`; }).join(' ');
       o.push(`<g data-ponto="${i}" style="cursor:move">
-        <rect x="${cx-1.8}" y="${cy-1.8}" width="3.6" height="3.6" rx=".4" fill="#e3eefa" stroke="#1d4e79" stroke-width=".5"/>
-        <path d="M ${cx} ${cy-1.1} V ${cy+0.3} M ${cx-1} ${cy+1.1} V ${cy+0.3} H ${cx+1} V ${cy+1.1}" fill="none" stroke="#1d4e79" stroke-width=".45"/></g>`);
+        <polygon points="${hex}" fill="#1d4e79" stroke="#0b2f4f" stroke-width=".35"/>
+        <path d="M ${cx-1.05} ${cy-0.55} H ${cx+1.05} V ${cy+0.55} H ${cx+0.5} V ${cy+0.95} H ${cx-0.5} V ${cy+0.55} H ${cx-1.05} Z" fill="#fff"/>
+        <path d="M ${cx-0.6} ${cy-0.5} V ${cy-0.1} M ${cx-0.2} ${cy-0.5} V ${cy-0.1} M ${cx+0.2} ${cy-0.5} V ${cy-0.1} M ${cx+0.6} ${cy-0.5} V ${cy-0.1}" stroke="#1d4e79" stroke-width=".18"/></g>`);
       o.push(txt(pt.x,pt.y+0.30,'L'+(i+1)+' · internet',1.6,'#1d4e79').replace('<text','<text pointer-events="none"'));
+      return;
+    }
+    if(pt.rede){
+      /* energia e rede num só símbolo: pastilha com o raio (energia) à esquerda, em amarelo,
+         e a ligação de rede à direita, em azul, dentro do mesmo contorno */
+      const cx=X(pt.x), cy=Y(pt.y), w=2.2, h=1.9;
+      o.push(`<g data-ponto="${i}" style="cursor:move">
+        <path d="M ${cx} ${cy-h} H ${cx-w+0.9} A .9 .9 0 0 0 ${cx-w} ${cy-h+0.9} V ${cy+h-0.9} A .9 .9 0 0 0 ${cx-w+0.9} ${cy+h} H ${cx} Z" fill="#ffd54a"/>
+        <path d="M ${cx} ${cy-h} H ${cx+w-0.9} A .9 .9 0 0 1 ${cx+w} ${cy-h+0.9} V ${cy+h-0.9} A .9 .9 0 0 1 ${cx+w-0.9} ${cy+h} H ${cx} Z" fill="#e3eefa"/>
+        <rect x="${cx-w}" y="${cy-h}" width="${2*w}" height="${2*h}" rx=".9" fill="none" stroke="#5b4a36" stroke-width=".5"/>
+        <line x1="${cx}" y1="${cy-h}" x2="${cx}" y2="${cy+h}" stroke="#5b4a36" stroke-width=".3"/>
+        <path d="M ${cx-1.0} ${cy-1.3} L ${cx-1.75} ${cy+0.15} L ${cx-1.15} ${cy+0.15} L ${cx-1.45} ${cy+1.3} L ${cx-0.45} ${cy-0.15} L ${cx-1.05} ${cy-0.15} Z" fill="#8a5a00"/>
+        <path d="M ${cx+1.1} ${cy-1.15} V ${cy+0.1} M ${cx+0.45} ${cy+1.15} V ${cy+0.1} H ${cx+1.75} V ${cy+1.15}" fill="none" stroke="#1d4e79" stroke-width=".4"/></g>`);
+      o.push(txt(pt.x+0.36,pt.y+0.18,'L'+(i+1),1.8,'#8a5a00').replace('<text','<text pointer-events="none"'));
       return;
     }
     o.push(`<g data-ponto="${i}" style="cursor:move">
@@ -1597,6 +1617,7 @@ function renderRules(){
     gf.length ? `Faltam ${totF} caixa(s): `+gf.map(g=>`${g.nome} ${g.maq} máq. / ${g.cap} tomadas → +${g.faltamCaixas}`).join(' · ')+
       '. Ver aba Obstáculos → Propor caixas.'
     : `Todas as ilhas com tomadas suficientes (${S.caixas.length} caixa(s), ${S.pontos.filter(p=>!p.teto&&!p.net).length} ponto(s) de luz`+
+      `${S.pontos.some(p=>p.rede)?` (${S.pontos.filter(p=>p.rede).length} com rede)`:''}`+
       `${S.pontos.some(p=>p.teto)?`; ${S.pontos.filter(p=>p.teto).length} luz(es) de teto não contam`:''}`+
       `${S.pontos.some(p=>p.net)?`; ${S.pontos.filter(p=>p.net).length} ponto(s) de internet não contam`:''}).`);
 
@@ -1972,7 +1993,7 @@ function renderObst(){
   document.getElementById('pontoTbl').innerHTML = S.pontos.length
     ? `<tr><th>#</th><th>tipo</th><th class="n">x</th><th class="n">y</th><th class="n">tomadas</th><th>serve</th><th></th></tr>`+
       S.pontos.map((pt,i)=>`<tr data-i="${i}"><td>L${i+1}</td>
-        <td><button class="sm" data-a="tipo">${pt.teto?'Luz teto':pt.net?'Internet':'Tomadas'}</button></td>
+        <td><button class="sm" data-a="tipo">${pt.teto?'Luz teto':pt.net?'Internet':pt.rede?'Energia e rede':'Tomadas'}</button></td>
         <td class="n"><input class="mini" data-f="x" value="${nf(pt.x)}"></td>
         <td class="n"><input class="mini" data-f="y" value="${nf(pt.y)}"></td>
         <td class="n">${pt.teto||pt.net?'—':`<input class="mini" data-f="t" value="${pt.t}">`}</td>
@@ -1986,8 +2007,9 @@ function renderObst(){
       pt[i.dataset.f] = i.dataset.f==='t' ? Math.max(0,Math.round(v)) : r2(v); recalc();
     });
     tr.querySelector('[data-a=tipo]').onclick=()=>{
-      // ciclo tomadas → luz teto → internet → tomadas
-      if(pt.teto){ delete pt.teto; pt.net=true; } else if(pt.net) delete pt.net; else pt.teto=true; recalc(); };
+      // ciclo tomadas → energia e rede → luz teto → internet → tomadas
+      if(pt.teto){ delete pt.teto; pt.net=true; } else if(pt.net){ delete pt.net; if(!pt.t) pt.t=4; }
+      else if(pt.rede){ delete pt.rede; pt.teto=true; } else pt.rede=true; recalc(); };
     tr.querySelector('[data-a=del]').onclick=()=>{ S.pontos.splice(+tr.dataset.i,1); recalc(); };
   });
 
