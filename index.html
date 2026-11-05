@@ -446,13 +446,13 @@ function estadoInicial(){
     pilares:[{tipo:'c', x:5.41, y:6.62, d:0.38, prov:true}], caixas:[],
     /* Pontos de luz: pequenas caixas com electricidade, com t tomadas; contam para as
        tomadas da ilha mais próxima, tal como as caixas de pavimento. */
-    /* Posições fixadas no plano, na ordem L1–L33. L16–L21 eram luzes de teto e passaram a
+    /* Posições fixadas no plano, na ordem L1–L34. L16–L21 eram luzes de teto e passaram a
        energia e rede no teto (noTeto:true muda o símbolo; etiq:'Teto' acrescenta o texto à etiqueta) (L16–L18 junto à parede das janelas, L19–L21 junto à parede sul). L12 e L24 são pontos de internet (net:true), também sem tomadas,
        debaixo da mesa, tal como o L25 (tomadas); L26 é internet na bancada Smart top, ao lado do L15;
        L27 é internet atrás do Rack 1, entre ele e a parede das janelas. L22–L23 junto ao canto sul-nascente.
-       L28–L33 acrescentados no plano. rede:true = energia e rede (4 tomadas e ligação de rede no mesmo ponto). */
+       L28–L34 acrescentados no plano. rede:true = energia e rede (4 tomadas e ligação de rede no mesmo ponto). */
     pontos:[
-      {x:7.68, y:16.80, t:4}, {x:7.60, y:16.10, t:4}, {x:6.35, y:4.65, t:4, rede:true},
+      {x:7.68, y:16.80, t:4}, {x:7.65, y:16.20, t:4}, {x:6.35, y:4.65, t:4, rede:true},
       {x:6.50, y:8.45, t:4, rede:true}, {x:5.05, y:8.40, t:4, rede:true}, {x:6.50, y:11.10, t:4, rede:true},
       {x:5.05, y:11.15, t:4, rede:true}, {x:6.45, y:13.80, t:4, rede:true}, {x:5.05, y:13.85, t:4, rede:true},
       {x:4.85, y:2.00, t:4, rede:true}, {x:5.55, y:1.95, t:4, rede:true}, {x:1.45, y:5.40, t:0, net:true},
@@ -460,9 +460,10 @@ function estadoInicial(){
       {x:7.68, y:13.80, t:2, rede:true, noTeto:true, etiq:'Teto'}, {x:7.68, y:11.15, t:2, rede:true, noTeto:true, etiq:'Teto'}, {x:7.55, y:8.45, t:2, rede:true, noTeto:true, etiq:'Teto'},
       {x:5.35, y:0.15, t:2, rede:true, noTeto:true, etiq:'Teto'}, {x:3.50, y:0.25, t:2, rede:true, noTeto:true, etiq:'Teto'}, {x:1.70, y:0.25, t:2, rede:true, noTeto:true, etiq:'Teto'},
       {x:6.70, y:0.20, t:4, rede:true}, {x:6.70, y:0.55, t:4, rede:true}, {x:1.80, y:5.40, t:0, net:true},
-      {x:1.60, y:5.00, t:4, rede:true}, {x:5.20, y:16.15, t:0, net:true}, {x:7.52, y:16.55, t:0, net:true},
+      {x:1.60, y:5.00, t:4, rede:true}, {x:5.20, y:16.15, t:0, net:true}, {x:7.68, y:16.50, t:0, net:true},
       {x:1.60, y:5.75, t:4, rede:true}, {x:5.75, y:8.45, t:4, rede:true}, {x:5.75, y:11.15, t:4, rede:true},
-      {x:5.80, y:13.80, t:4, rede:true}, {x:5.65, y:4.70, t:4, rede:true}, {x:3.40, y:2.00, t:4, rede:true}
+      {x:5.80, y:13.80, t:4, rede:true}, {x:5.65, y:4.70, t:4, rede:true}, {x:3.40, y:2.00, t:4, rede:true},
+      {x:4.10, y:2.00, t:4, rede:true}
     ],
     /* Gabinete no topo norte da parede poente (Q 10,87 = sala + gabinete), até à Parede 4 (x = 3,20).
        A planta dá T 3,36; com a Parede 5 medida em 3,20 fica 3,20 × 3,62 m. */
@@ -493,7 +494,7 @@ function estadoInicial(){
           '4 cadeiras de escritório, 2 de cada lado da mesa, com 0,70 × 0,70 m (provisório, por medir): a poente ficam a 0,12 m da parede; a nascente deixam 1,10 m de passagem até à R3/R4. '+
           'Bancada Smart top (1,80 × 0,55 m) fixa entre a R10 e o armário, ao lado dos racks. '+
           'A antiga R8 saiu: as suas 4 Áurias (2 J Curve, 3 monitores e Flat) são cedidas. '+
-          'Pontos de luz L1–L11, L13–L15, L22, L23, L25 e L28–L33 com 4 tomadas cada; L16–L21 (teto) com 2 tomadas e 2 cabos de rede para o Rack 1 (L25 e L28 debaixo da mesa); energia e rede (tomadas + rede) em L3–L11, L13–L23, L25 e L28–L33 — só L1 e L2 ficam só com tomadas; L12 e L24 são pontos de internet (sem tomadas), debaixo da mesa; L26 é internet na bancada Smart top; L27 é internet atrás do Rack 1 (lado da parede das janelas); L16–L21 deixaram de ser luzes de teto e passaram a energia e rede (L16–L18 junto à parede das janelas, '+
+          'Pontos de luz L1–L11, L13–L15, L22, L23, L25 e L28–L34 com 4 tomadas cada; L16–L21 (teto) com 2 tomadas e 2 cabos de rede para o Rack 1 (L25 e L28 debaixo da mesa); energia e rede (tomadas + rede) em L3–L11, L13–L23, L25 e L28–L34 — só L1 e L2 ficam só com tomadas; L12 e L24 são pontos de internet (sem tomadas), debaixo da mesa; L26 é internet na bancada Smart top; L27 é internet atrás do Rack 1 (lado da parede das janelas); L16–L21 deixaram de ser luzes de teto e passaram a energia e rede (L16–L18 junto à parede das janelas, '+
           'L19–L21 junto à parede sul). '+
           'Paredes (cantos A–F a partir da porta exterior): 1 sul A–B 6,90; 2 janelas B–C 18,68 (medida); '+
           '3 norte C–D 4,56 (medida 4,54; ajustada ao alinhar a parede sul); 1 sul A–B perpendicular à poente e paralela às filas (cantos B e C subidos 14 cm); 4 nascente do gabinete D–E 10,30 (medida); '+
