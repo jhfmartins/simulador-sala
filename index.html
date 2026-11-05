@@ -1136,41 +1136,22 @@ function render(){
     o.push(txt(c.x+0.28,c.y+0.16,'C'+(i+1),1.8,cor).replace('<text','<text pointer-events="none"'));
   });
 
-  // pontos de luz: arrastam-se no plano
+  // pontos de luz: arrastam-se no plano (os símbolos estão em sym*, partilhados com a legenda)
   S.pontos.forEach((pt,i)=>{
+    const cx=X(pt.x), cy=Y(pt.y), g=sv=>o.push(`<g data-ponto="${i}" style="cursor:move">${sv}</g>`);
     if(pt.teto){
-      // luz de teto: círculo com cruz, o símbolo habitual de ponto de luz no tecto
-      const cx=X(pt.x), cy=Y(pt.y), k=1.35;
-      o.push(`<g data-ponto="${i}" style="cursor:move">
-        <circle cx="${cx}" cy="${cy}" r="1.9" fill="#fff" stroke="#8a5a00" stroke-width=".5"/>
-        <path d="M ${cx-k} ${cy-k} L ${cx+k} ${cy+k} M ${cx-k} ${cy+k} L ${cx+k} ${cy-k}" stroke="#8a5a00" stroke-width=".5"/></g>`);
+      g(symTeto(cx,cy));
       // etiqueta curta por cima do símbolo, para não tapar as baias ao lado
       o.push(txt(pt.x,pt.y+0.30,'L'+(i+1)+' · teto',1.6,'#8a5a00').replace('<text','<text pointer-events="none"'));
       return;
     }
     if(pt.net){
-      /* ponto de internet (só rede): tomada RJ45 vista de frente — hexágono azul-escuro cheio com a
-         boca da ficha a branco, para não se confundir com a pastilha de energia e rede */
-      const cx=X(pt.x), cy=Y(pt.y), R6=2.1;
-      const hex=[0,1,2,3,4,5].map(k=>{ const a=Math.PI/6+k*Math.PI/3; return `${r3(cx+R6*Math.cos(a))},${r3(cy+R6*Math.sin(a))}`; }).join(' ');
-      o.push(`<g data-ponto="${i}" style="cursor:move">
-        <polygon points="${hex}" fill="#1d4e79" stroke="#0b2f4f" stroke-width=".35"/>
-        <path d="M ${cx-1.05} ${cy-0.55} H ${cx+1.05} V ${cy+0.55} H ${cx+0.5} V ${cy+0.95} H ${cx-0.5} V ${cy+0.55} H ${cx-1.05} Z" fill="#fff"/>
-        <path d="M ${cx-0.6} ${cy-0.5} V ${cy-0.1} M ${cx-0.2} ${cy-0.5} V ${cy-0.1} M ${cx+0.2} ${cy-0.5} V ${cy-0.1} M ${cx+0.6} ${cy-0.5} V ${cy-0.1}" stroke="#1d4e79" stroke-width=".18"/></g>`);
+      g(symNet(cx,cy));
       o.push(txt(pt.x,pt.y+0.30,'L'+(i+1)+' · internet',1.6,'#1d4e79').replace('<text','<text pointer-events="none"'));
       return;
     }
     if(pt.rede){
-      /* energia e rede num só símbolo: pastilha com o raio (energia) à esquerda, em amarelo,
-         e a ligação de rede à direita, em azul, dentro do mesmo contorno */
-      const cx=X(pt.x), cy=Y(pt.y), w=2.2, h=1.9;
-      o.push(`<g data-ponto="${i}" style="cursor:move">
-        <path d="M ${cx} ${cy-h} H ${cx-w+0.9} A .9 .9 0 0 0 ${cx-w} ${cy-h+0.9} V ${cy+h-0.9} A .9 .9 0 0 0 ${cx-w+0.9} ${cy+h} H ${cx} Z" fill="#ffd54a"/>
-        <path d="M ${cx} ${cy-h} H ${cx+w-0.9} A .9 .9 0 0 1 ${cx+w} ${cy-h+0.9} V ${cy+h-0.9} A .9 .9 0 0 1 ${cx+w-0.9} ${cy+h} H ${cx} Z" fill="#e3eefa"/>
-        <rect x="${cx-w}" y="${cy-h}" width="${2*w}" height="${2*h}" rx=".9" fill="none" stroke="#5b4a36" stroke-width=".5"/>
-        <line x1="${cx}" y1="${cy-h}" x2="${cx}" y2="${cy+h}" stroke="#5b4a36" stroke-width=".3"/>
-        <path d="M ${cx-1.0} ${cy-1.3} L ${cx-1.75} ${cy+0.15} L ${cx-1.15} ${cy+0.15} L ${cx-1.45} ${cy+1.3} L ${cx-0.45} ${cy-0.15} L ${cx-1.05} ${cy-0.15} Z" fill="#8a5a00"/>
-        <path d="M ${cx+1.1} ${cy-1.15} V ${cy+0.1} M ${cx+0.45} ${cy+1.15} V ${cy+0.1} H ${cx+1.75} V ${cy+1.15}" fill="none" stroke="#1d4e79" stroke-width=".4"/></g>`);
+      g(symRede(cx,cy));
       // etiq: texto extra ao lado do número (p. ex. «Teto» para os pontos montados no tecto)
       // junto à margem nascente a etiqueta sobe para cima do símbolo: à direita ficava cortada e à
       // esquerda tapava as baias das filas
@@ -1179,12 +1160,35 @@ function render(){
                      : txt(pt.x+0.36,pt.y+0.18,'L'+(i+1),1.8,'#8a5a00').replace('<text','<text pointer-events="none"'));
       return;
     }
-    o.push(`<g data-ponto="${i}" style="cursor:move">
-      <circle cx="${X(pt.x)}" cy="${Y(pt.y)}" r="1.9" fill="#ffd54a" stroke="#8a5a00" stroke-width=".5"/>
-      <path d="M ${X(pt.x)+0.35} ${Y(pt.y)-1.3} L ${X(pt.x)-0.7} ${Y(pt.y)+0.15} L ${X(pt.x)+0.1} ${Y(pt.y)+0.15}
-        L ${X(pt.x)-0.35} ${Y(pt.y)+1.3} L ${X(pt.x)+0.7} ${Y(pt.y)-0.15} L ${X(pt.x)-0.1} ${Y(pt.y)-0.15} Z" fill="#8a5a00"/></g>`);
+    g(symTomadas(cx,cy));
     o.push(txt(pt.x+0.30,pt.y+0.18,'L'+(i+1),1.8,'#8a5a00').replace('<text','<text pointer-events="none"'));
   });
+
+  /* Legenda das ligações, no canto livre a noroeste (fora da sala, a norte do gabinete), para sair
+     também nas exportações e na impressão. Só entram os tipos que existem no plano. */
+  {
+    const tipos=[
+      ['rede', p=>p.rede,                      symRede,    LIG_LEG.rede],
+      ['net',  p=>p.net,                       symNet,     LIG_LEG.net],
+      ['tom',  p=>!p.rede&&!p.net&&!p.teto,    symTomadas, LIG_LEG.tom],
+      ['teto', p=>p.teto,                      symTeto,    LIG_LEG.teto]
+    ].filter(t=>S.pontos.some(t[1]));
+    if(tipos.length){
+      const x0=X(0.15), lh=2.4, larg=X(3.05)-x0;
+      const alt = 4.2 + tipos.reduce((a,t)=>a+Math.max(5.2, t[3].length*lh+1.6),0);
+      let y=Y(17.55);
+      o.push(`<g pointer-events="none"><rect x="${x0}" y="${y}" width="${r3(larg)}" height="${r3(alt)}" rx="1" fill="#fff" stroke="#4a5158" stroke-width=".35"/>`);
+      o.push(`<text x="${x0+2}" y="${y+3.2}" font-size="2.2" font-weight="700" fill="#15181c">Ligações</text>`);
+      y+=4.2;
+      tipos.forEach(t=>{
+        const h=Math.max(5.2, t[3].length*lh+1.6), cy=y+h/2;
+        o.push(t[2](x0+4.2, cy));
+        t[3].forEach((ln,k)=>o.push(`<text x="${x0+8}" y="${r3(cy-(t[3].length-1)*lh/2+k*lh+0.7)}" font-size="1.9" fill="#15181c">${esc(ln)}</text>`));
+        y+=h;
+      });
+      o.push('</g>');
+    }
+  }
 
   // portas
   DOORS.forEach(d=>{
@@ -1315,6 +1319,42 @@ function rodarMesa(ms){
   if(ms.tipo==='L') ms.rot=((ms.rot||0)+1)%4; else [ms.w,ms.h]=[ms.h,ms.w];
 }
 function mesaDims(ms){ return (ms.tipo==='L' && (ms.rot||0)%2) ? [ms.h, ms.w] : [ms.w, ms.h]; }
+/* Símbolos dos pontos (centro cx,cy em unidades do SVG). Usados no plano e na legenda. */
+function symTomadas(cx,cy){
+  return `<circle cx="${cx}" cy="${cy}" r="1.9" fill="#ffd54a" stroke="#8a5a00" stroke-width=".5"/>
+    <path d="M ${cx+0.35} ${cy-1.3} L ${cx-0.7} ${cy+0.15} L ${cx+0.1} ${cy+0.15}
+      L ${cx-0.35} ${cy+1.3} L ${cx+0.7} ${cy-0.15} L ${cx-0.1} ${cy-0.15} Z" fill="#8a5a00"/>`;
+}
+// energia e rede num só símbolo: raio em amarelo à esquerda, rede em azul à direita, um só contorno
+function symRede(cx,cy){
+  const w=2.2, h=1.9;
+  return `<path d="M ${cx} ${cy-h} H ${cx-w+0.9} A .9 .9 0 0 0 ${cx-w} ${cy-h+0.9} V ${cy+h-0.9} A .9 .9 0 0 0 ${cx-w+0.9} ${cy+h} H ${cx} Z" fill="#ffd54a"/>
+    <path d="M ${cx} ${cy-h} H ${cx+w-0.9} A .9 .9 0 0 1 ${cx+w} ${cy-h+0.9} V ${cy+h-0.9} A .9 .9 0 0 1 ${cx+w-0.9} ${cy+h} H ${cx} Z" fill="#e3eefa"/>
+    <rect x="${cx-w}" y="${cy-h}" width="${2*w}" height="${2*h}" rx=".9" fill="none" stroke="#5b4a36" stroke-width=".5"/>
+    <line x1="${cx}" y1="${cy-h}" x2="${cx}" y2="${cy+h}" stroke="#5b4a36" stroke-width=".3"/>
+    <path d="M ${cx-1.0} ${cy-1.3} L ${cx-1.75} ${cy+0.15} L ${cx-1.15} ${cy+0.15} L ${cx-1.45} ${cy+1.3} L ${cx-0.45} ${cy-0.15} L ${cx-1.05} ${cy-0.15} Z" fill="#8a5a00"/>
+    <path d="M ${cx+1.1} ${cy-1.15} V ${cy+0.1} M ${cx+0.45} ${cy+1.15} V ${cy+0.1} H ${cx+1.75} V ${cy+1.15}" fill="none" stroke="#1d4e79" stroke-width=".4"/>`;
+}
+// só internet: tomada RJ45 vista de frente, hexágono azul-escuro com a boca da ficha a branco
+function symNet(cx,cy){
+  const R6=2.1, hex=[0,1,2,3,4,5].map(k=>{ const a=Math.PI/6+k*Math.PI/3; return `${r3(cx+R6*Math.cos(a))},${r3(cy+R6*Math.sin(a))}`; }).join(' ');
+  return `<polygon points="${hex}" fill="#1d4e79" stroke="#0b2f4f" stroke-width=".35"/>
+    <path d="M ${cx-1.05} ${cy-0.55} H ${cx+1.05} V ${cy+0.55} H ${cx+0.5} V ${cy+0.95} H ${cx-0.5} V ${cy+0.55} H ${cx-1.05} Z" fill="#fff"/>
+    <path d="M ${cx-0.6} ${cy-0.5} V ${cy-0.1} M ${cx-0.2} ${cy-0.5} V ${cy-0.1} M ${cx+0.2} ${cy-0.5} V ${cy-0.1} M ${cx+0.6} ${cy-0.5} V ${cy-0.1}" stroke="#1d4e79" stroke-width=".18"/>`;
+}
+// luz de teto: círculo com cruz, o símbolo habitual de ponto de luz no tecto
+function symTeto(cx,cy){
+  const k=1.35;
+  return `<circle cx="${cx}" cy="${cy}" r="1.9" fill="#fff" stroke="#8a5a00" stroke-width=".5"/>
+    <path d="M ${cx-k} ${cy-k} L ${cx+k} ${cy+k} M ${cx-k} ${cy+k} L ${cx+k} ${cy-k}" stroke="#8a5a00" stroke-width=".5"/>`;
+}
+/* Texto da legenda de cada tipo de ponto (uma entrada por linha), tal como pedido para a obra. */
+const LIG_LEG = {
+  rede: ['4 tomadas sem gerador +', '8 cabos de rede para rack 1'],
+  net:  ['3 cabos com internet'],
+  tom:  ['4 tomadas sem gerador'],
+  teto: ['Luz de teto']
+};
 function handle(x,y,kind){
   return `<rect data-handle="${kind}" x="${X(x)-2}" y="${Y(y)-2}" width="4" height="4"
     fill="#fff" stroke="#0b57a4" stroke-width=".7" style="cursor:nwse-resize"/>`;
